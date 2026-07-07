@@ -18,12 +18,14 @@ A Model Context Protocol (MCP) server for integrating with the Zentao API. This 
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd zentao_mcp
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -36,26 +38,53 @@ A Model Context Protocol (MCP) server for integrating with the Zentao API. This 
    ZENTAO_PASSWORD=your_password
    ```
 
-## Build and Run
-
-To build the project:
-```bash
-npm run build
-```
-
-To run the server:
-```bash
-npm start
-```
-
-For development (watch mode):
-```bash
-npm run dev
-```
-
 ## Usage
 
 This server communicates via standard input/output (`stdio`), making it compatible with any MCP client that supports stdio transport.
+
+### Integrating with MCP Clients (Claude Desktop, Cursor, etc.)
+
+Once published to npm or GitHub, users can integrate this server into their MCP clients easily.
+
+#### Option 1: Running via `npx` (Recommended if published to NPM)
+
+Add the following to your MCP client configuration (e.g., `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "zentao": {
+      "command": "npx",
+      "args": ["-y", "zentao_mcp"],
+      "env": {
+        "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
+        "ZENTAO_ACCOUNT": "your_username",
+        "ZENTAO_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
+
+#### Option 2: Running from a Local Clone
+
+If a user clones the repository locally, they can configure their client to run it directly:
+
+```json
+{
+  "mcpServers": {
+    "zentao": {
+      "command": "node",
+      "args": ["/absolute/path/to/zentao_mcp/build/index.js"],
+      "env": {
+        "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
+        "ZENTAO_ACCOUNT": "your_username",
+        "ZENTAO_PASSWORD": "your_password"
+      }
+    }
+  }
+}
+```
 
 ### Available Tools
 

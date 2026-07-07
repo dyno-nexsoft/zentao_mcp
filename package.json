@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "description": "Zentao MCP Server",
   "main": "build/index.js",
+  "bin": {
+    "zentao_mcp": "./build/index.js"
+  },
   "type": "module",
+  "files": [
+    "build"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
