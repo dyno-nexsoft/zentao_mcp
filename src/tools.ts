@@ -6,6 +6,17 @@ import { ZentaoClient } from "./zentaoClient.js";
 
 const client = new ZentaoClient();
 
+/**
+ * Registers Zentao-specific tools to the Model Context Protocol (MCP) server.
+ * 
+ * Available Tools:
+ * - `zentao_get_execution_tasks`: Fetch all tasks within a sprint/execution.
+ * - `zentao_get_product_bugs`: Fetch all bugs reported for a product.
+ * - `zentao_get_bug_details`: Fetch full details of a specific bug by ID.
+ * - `zentao_download_attachment`: Download attachments (e.g. bug reproduction videos/images) and save locally.
+ * 
+ * @param server The MCP Server instance where the tools will be registered.
+ */
 export function registerTools(server: McpServer) {
   server.registerTool(
     "zentao_get_execution_tasks",

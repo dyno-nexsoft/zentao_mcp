@@ -45,11 +45,7 @@ This server communicates via standard input/output (`stdio`), making it compatib
 
 ### Integrating with MCP Clients (Claude Desktop, Cursor, etc.)
 
-Once published to npm or GitHub, users can integrate this server into their MCP clients easily.
-
-#### Option 1: Running via `npx` (Recommended if published to NPM)
-
-Add the following to your MCP client configuration (e.g., `claude_desktop_config.json`):
+Once published to npm or GitHub, users can integrate this server into their MCP clients easily. Add the following to your MCP client configuration (e.g., `claude_desktop_config.json`):
 
 ```json
 {
@@ -60,26 +56,6 @@ Add the following to your MCP client configuration (e.g., `claude_desktop_config
         "-y",
         "@dyno181cm.nexsoft/zentao_mcp"
       ],
-      "env": {
-        "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
-        "ZENTAO_ACCOUNT": "your_username",
-        "ZENTAO_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
-
-#### Option 2: Running from a Local Clone
-
-If a user clones the repository locally, they can configure their client to run it directly:
-
-```json
-{
-  "mcpServers": {
-    "zentao": {
-      "command": "node",
-      "args": ["/absolute/path/to/zentao_mcp/build/index.js"],
       "env": {
         "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
         "ZENTAO_ACCOUNT": "your_username",
