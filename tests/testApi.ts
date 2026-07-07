@@ -19,6 +19,14 @@ async function main() {
       console.error('Error fetching tasks:', e.response?.data || e.message);
     }
 
+    console.log('\n--- Fetching task details (Task ID: 2) ---');
+    try {
+      const task = await client.getTaskDetails(2);
+      console.log('Task details:', JSON.stringify(task, null, 2));
+    } catch (e: any) {
+      console.error('Error fetching task:', e.response?.data || e.message);
+    }
+
     console.log('\n--- Fetching bug details (Bug ID: 2) ---');
     try {
       const bug = await client.getBugDetails(2);
