@@ -16,6 +16,87 @@ const client = new ZentaoClient();
  * 
  * @param server The MCP Server instance where the tools will be registered.
  */
+function parseFiles(files: any) {
+  if (!files) return [];
+  const mapper = (f: any) => ({
+    id: f.id,
+    title: f.title || f.name,
+    extension: f.extension,
+    size: f.size
+  });
+  if (Array.isArray(files)) {
+    return files.map(mapper);
+  }
+  if (typeof files === 'object') {
+    return Object.values(files).map(mapper);
+  }
+  return [];
+}
+
+function cleanTask(task: any) {
+  if (!task) return null;
+  return {
+    id: task.id,
+    name: task.name,
+    status: task.status,
+    pri: task.pri,
+    desc: task.desc,
+    estimate: task.estimate,
+    consumed: task.consumed,
+    left: task.left,
+    progress: task.progress,
+    openedBy: task.openedBy ? {
+      account: task.openedBy.account,
+      realname: task.openedBy.realname
+    } : undefined,
+    assignedTo: task.assignedTo ? {
+      account: task.assignedTo.account,
+      realname: task.assignedTo.realname
+    } : undefined,
+    finishedBy: task.finishedBy ? {
+      account: task.finishedBy.account,
+      realname: task.finishedBy.realname
+    } : undefined,
+    closedBy: task.closedBy ? {
+      account: task.closedBy.account,
+      realname: task.closedBy.realname
+    } : undefined,
+    closedReason: task.closedReason,
+    files: parseFiles(task.files)
+  };
+}
+
+function cleanBug(bug: any) {
+  if (!bug) return null;
+  return {
+    id: bug.id,
+    title: bug.title,
+    status: bug.status,
+    severity: bug.severity,
+    pri: bug.pri,
+    type: bug.type,
+    steps: bug.steps,
+    openedBy: bug.openedBy ? {
+      account: bug.openedBy.account,
+      realname: bug.openedBy.realname
+    } : undefined,
+    assignedTo: bug.assignedTo ? {
+      account: bug.assignedTo.account,
+      realname: bug.assignedTo.realname
+    } : undefined,
+    resolvedBy: bug.resolvedBy ? {
+      account: bug.resolvedBy.account,
+      realname: bug.resolvedBy.realname
+    } : undefined,
+    resolution: bug.resolution,
+    closedBy: bug.closedBy ? {
+      account: bug.closedBy.account,
+      realname: bug.closedBy.realname
+    } : undefined,
+    files: parseFiles(bug.files)
+  };
+}
+
 export function registerTools(server: McpServer) {
 
   server.registerTool(
@@ -28,8 +109,9 @@ export function registerTools(server: McpServer) {
     },
     async ({ taskId }) => {
       const data = await client.getTaskDetails(taskId);
+      const cleaned = cleanTask(data);
       return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(cleaned, null, 2) }],
       };
     }
   );
@@ -44,8 +126,9 @@ export function registerTools(server: McpServer) {
     },
     async ({ bugId }) => {
       const data = await client.getBugDetails(bugId);
+      const cleaned = cleanBug(data);
       return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+        content: [{ type: "text", text: JSON.stringify(cleaned, null, 2) }],
       };
     }
   );
