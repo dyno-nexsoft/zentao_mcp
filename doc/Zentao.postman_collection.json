@@ -1,0 +1,468 @@
+{
+  "info": {
+    "_postman_id": "646445cb-47af-4073-aed7-57743abf8fb0",
+    "name": "Zentao",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "45115317"
+  },
+  "item": [
+    {
+      "name": "/tokens",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Lưu Token vào Collection Variables\", function () {\r",
+              "    // 1. Phân giải dữ liệu JSON từ phản hồi của API\r",
+              "    var jsonData = pm.response.json();\r",
+              "    var myToken = jsonData.token; \r",
+              "    \r",
+              "    // 2. Lưu vào Collection Variables\r",
+              "    pm.collectionVariables.set(\"TOKEN\", myToken);\r",
+              "    \r",
+              "    console.log(\"Đã lưu token mới: \" + myToken);\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"account\": \"Dyno\", \"password\": \"123123aA\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/tokens",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "tokens"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/users",
+      "protocolProfileBehavior": {
+        "disableBodyPruning": true
+      },
+      "request": {
+        "method": "GET",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/users?page=1&limit=100",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "users"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/projects",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/projects",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "projects"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "devel",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/projects/:id/executions",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/projects/:id/executions",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "projects",
+            ":id",
+            "executions"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "devel",
+              "type": "text",
+              "disabled": true
+            }
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "2",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/executions/:id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/executions/:id",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "executions",
+            ":id"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "devel",
+              "type": "text",
+              "disabled": true
+            }
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "10",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/executions/:id/tasks",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/executions/10/tasks?page=1&limit=500",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "executions",
+            "10",
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "500"
+            },
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "devel",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/modules?type=task&id=:id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/modules?type=task&id=10",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "modules"
+          ],
+          "query": [
+            {
+              "key": "type",
+              "value": "task"
+            },
+            {
+              "key": "id",
+              "value": "10"
+            },
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/executions/:id/tasks?moduleID=:id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/executions/:id/tasks?moduleID=123",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "executions",
+            ":id",
+            "tasks"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "done",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "type",
+              "value": "devel",
+              "type": "text",
+              "disabled": true
+            },
+            {
+              "key": "moduleID",
+              "value": "123"
+            }
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "10",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/products/:id/bugs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/products/:id/bugs",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "products",
+            ":id",
+            "bugs"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "123"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "/bugs/:id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://zentao.oasoft.xyz:4433/zentao/api.php/v1/bugs/:id",
+          "protocol": "https",
+          "host": [
+            "zentao",
+            "oasoft",
+            "xyz"
+          ],
+          "port": "4433",
+          "path": [
+            "zentao",
+            "api.php",
+            "v1",
+            "bugs",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "123"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{TOKEN}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "TOKEN",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "TOKEN",
+      "value": ""
+    }
+  ]
+}
