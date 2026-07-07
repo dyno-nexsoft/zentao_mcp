@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 
 dotenv.config();
 
@@ -113,5 +114,27 @@ export class ZentaoClient {
   public async getBugDetails(bugId: string | number) {
     const res = await this.client.get(`/bugs/${bugId}`);
     return res.data;
+  }
+
+  public async downloadFile(fileId: string | number, targetPath: string): Promise<string> {
+    const writer = fs.createWriteStream(targetPath);
+    const res = await this.client.get(`/files/${fileId}`, {
+      responseType: 'stream',
+    });
+
+    return new Promise((resolve, reject) => {
+      res.data.pipe(writer);
+      let error: Error | null = null;
+      writer.on('error', err => {
+        error = err;
+        writer.close();
+        reject(err);
+      });
+      writer.on('close', () => {
+        if (!error) {
+          resolve(targetPath);
+        }
+      });
+    });
   }
 }

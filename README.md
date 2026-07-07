@@ -9,6 +9,7 @@ A Model Context Protocol (MCP) server for integrating with the Zentao API. This 
   - `zentao_get_execution_tasks`: Retrieve tasks in an execution (sprint), with optional filtering by module ID.
   - `zentao_get_product_bugs`: Fetch a list of bugs associated with a specific product.
   - `zentao_get_bug_details`: Get detailed information about a specific bug.
+  - `zentao_download_attachment`: Download file attachments from ZenTao (e.g., bug/task images or videos).
 
 ## Requirements
 
@@ -105,3 +106,8 @@ If a user clones the repository locally, they can configure their client to run 
 - **`zentao_get_bug_details`**
   - **Inputs:**
     - `bugId` (string | number) - Required. Bug ID.
+
+- **`zentao_download_attachment`**
+  - **Inputs:**
+    - `fileId` (string | number) - Required. File ID to download.
+    - `extension` (string) - Optional. File extension (e.g., mp4, png).

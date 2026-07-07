@@ -1,5 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import * as os from "os";
+import * as path from "path";
 import { ZentaoClient } from "./zentaoClient.js";
 
 const client = new ZentaoClient();
@@ -53,6 +55,31 @@ export function registerTools(server: McpServer) {
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
+    }
+  );
+
+  server.registerTool(
+    "zentao_download_attachment",
+    {
+      description: "Download a file attachment from ZenTao and save it locally",
+      inputSchema: {
+        fileId: z.union([z.string(), z.number()]).describe("File ID to download"),
+        extension: z.string().optional().describe("Optional file extension (e.g., mp4, png)"),
+      }
+    },
+    async ({ fileId, extension }) => {
+      const ext = extension ? (extension.startsWith('.') ? extension : `.${extension}`) : '';
+      const targetPath = path.join(os.tmpdir(), `zentao_file_${fileId}${ext}`);
+      try {
+        const savedPath = await client.downloadFile(fileId, targetPath);
+        return {
+          content: [{ type: "text", text: `File downloaded successfully to: ${savedPath}` }],
+        };
+      } catch (error: any) {
+        return {
+          content: [{ type: "text", text: `Failed to download file: ${error.message}` }],
+        };
+      }
     }
   );
 }
