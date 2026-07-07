@@ -96,22 +96,17 @@ export class ZentaoClient {
    * @throws {Error} If account/password env vars are missing or if the API request fails.
    */
   public async login(): Promise<void> {
-    try {
-      if (!this.account || !this.password) {
-        throw new Error('ZENTAO_ACCOUNT or ZENTAO_PASSWORD is not set in environment variables');
-      }
-      const response = await this.client.post('/tokens', {
-        account: this.account,
-        password: this.password,
-      });
-      if (response.data && response.data.token) {
-        this.token = response.data.token;
-      } else {
-        throw new Error('Login failed: Token not found in response');
-      }
-    } catch (error: any) {
-      console.error('Failed to login to Zentao:', error.message);
-      throw error;
+    if (!this.account || !this.password) {
+      throw new Error('ZENTAO_ACCOUNT or ZENTAO_PASSWORD is not set in environment variables');
+    }
+    const response = await this.client.post('/tokens', {
+      account: this.account,
+      password: this.password,
+    });
+    if (response.data && response.data.token) {
+      this.token = response.data.token;
+    } else {
+      throw new Error('Login failed: Token not found in response');
     }
   }
 
