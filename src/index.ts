@@ -10,7 +10,7 @@ dotenv.config();
 // Create the MCP server instance
 const server = new McpServer({
   name: "Zentao MCP Server",
-  version: "1.2.4"
+  version: "1.2.5"
 });
 
 // Register all Zentao-specific tools onto the server

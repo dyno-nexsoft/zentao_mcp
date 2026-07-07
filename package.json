@@ -1,6 +1,6 @@
 {
   "name": "@dyno181cm.nexsoft/zentao_mcp",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Zentao MCP Server",
   "repository": {
     "type": "git",
@@ -29,6 +29,10 @@
     "@modelcontextprotocol/sdk": "^1.1.0",
     "axios": "^1.7.9",
     "dotenv": "^16.4.7"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
