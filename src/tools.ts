@@ -10,33 +10,13 @@ const client = new ZentaoClient();
  * Registers Zentao-specific tools to the Model Context Protocol (MCP) server.
  * 
  * Available Tools:
- * - `zentao_get_execution_tasks`: Fetch all tasks within a sprint/execution.
  * - `zentao_get_task_details`: Fetch full details of a specific task by ID.
- * - `zentao_get_product_bugs`: Fetch all bugs reported for a product.
  * - `zentao_get_bug_details`: Fetch full details of a specific bug by ID.
  * - `zentao_download_attachment`: Download attachments (e.g. bug reproduction videos/images) and save locally.
  * 
  * @param server The MCP Server instance where the tools will be registered.
  */
 export function registerTools(server: McpServer) {
-  server.registerTool(
-    "zentao_get_execution_tasks",
-    {
-      description: "Get a list of tasks in an execution (sprint), optionally filtered by moduleID",
-      inputSchema: {
-        executionId: z.union([z.string(), z.number()]).describe("Execution ID"),
-        page: z.number().optional().describe("Current page (default 1)"),
-        limit: z.number().optional().describe("Number of items per page (default 500)"),
-        moduleId: z.union([z.string(), z.number()]).optional().describe("Filter by module ID"),
-      }
-    },
-    async ({ executionId, page = 1, limit = 500, moduleId }) => {
-      const data = await client.getExecutionTasks(executionId, page, limit, moduleId);
-      return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      };
-    }
-  );
 
   server.registerTool(
     "zentao_get_task_details",
@@ -48,22 +28,6 @@ export function registerTools(server: McpServer) {
     },
     async ({ taskId }) => {
       const data = await client.getTaskDetails(taskId);
-      return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      };
-    }
-  );
-
-  server.registerTool(
-    "zentao_get_product_bugs",
-    {
-      description: "Get a list of bugs for a product",
-      inputSchema: {
-        productId: z.union([z.string(), z.number()]).describe("Product ID"),
-      }
-    },
-    async ({ productId }) => {
-      const data = await client.getProductBugs(productId);
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
