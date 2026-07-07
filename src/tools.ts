@@ -2,9 +2,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as os from "os";
 import * as path from "path";
+import fs from "fs";
 import { ZentaoClient } from "./zentaoClient.js";
 
 const client = new ZentaoClient();
+const activeDownloads = new Map<string, Promise<string>>();
 
 /**
  * Registers Zentao-specific tools to the Model Context Protocol (MCP) server.
@@ -146,10 +148,33 @@ export function registerTools(server: McpServer) {
       const ext = extension ? (extension.startsWith('.') ? extension : `.${extension}`) : '';
       const targetPath = path.join(os.tmpdir(), `zentao_file_${fileId}${ext}`);
       try {
-        const savedPath = await client.downloadFile(fileId, targetPath);
-        return {
-          content: [{ type: "text", text: `File downloaded successfully to: ${savedPath}` }],
-        };
+        // If it already exists on disk and is not currently being downloaded
+        if (fs.existsSync(targetPath) && !activeDownloads.has(targetPath)) {
+          return {
+            content: [{ type: "text", text: `File already exists locally at: ${targetPath}` }],
+          };
+        }
+
+        // If it is currently being downloaded, await the active promise
+        if (activeDownloads.has(targetPath)) {
+          await activeDownloads.get(targetPath);
+          return {
+            content: [{ type: "text", text: `File downloaded successfully to: ${targetPath}` }],
+          };
+        }
+
+        // Start new download and track it
+        const downloadPromise = client.downloadFile(fileId, targetPath);
+        activeDownloads.set(targetPath, downloadPromise);
+
+        try {
+          const savedPath = await downloadPromise;
+          return {
+            content: [{ type: "text", text: `File downloaded successfully to: ${savedPath}` }],
+          };
+        } finally {
+          activeDownloads.delete(targetPath);
+        }
       } catch (error: any) {
         return {
           content: [{ type: "text", text: `Failed to download file: ${error.message}` }],
