@@ -15,16 +15,31 @@ export class ZentaoClient {
   private account = process.env.ZENTAO_ACCOUNT || '';
   private password = process.env.ZENTAO_PASSWORD || '';
   private baseUrl = process.env.ZENTAO_BASE_URL || '';
-  private taskCache = new Map<string | number, { data: any; timestamp: number }>();
-  private bugCache = new Map<string | number, { data: any; timestamp: number }>();
+  private getCache = new Map<string, { data: any; timestamp: number }>();
   private cacheTtlMs = 2 * 60 * 1000; // 2 minutes TTL
 
   /**
-   * Clears the in-memory cache for tasks and bugs. Helpful for testing.
+   * Clears the in-memory cache for GET requests. Helpful for testing.
    */
   public clearCache(): void {
-    this.taskCache.clear();
-    this.bugCache.clear();
+    this.getCache.clear();
+  }
+
+  /**
+   * Helper method to perform GET requests with caching.
+   * 
+   * @param url The API endpoint path.
+   * @returns The response data.
+   */
+  private async get<T>(url: string): Promise<T> {
+    const cached = this.getCache.get(url);
+    const now = Date.now();
+    if (cached && (now - cached.timestamp < this.cacheTtlMs)) {
+      return cached.data;
+    }
+    const res = await this.client.get<T>(url);
+    this.getCache.set(url, { data: res.data, timestamp: now });
+    return res.data;
   }
 
   /**
@@ -108,14 +123,7 @@ export class ZentaoClient {
    * @returns Resolves with the task details.
    */
   public async getTaskDetails(taskId: string | number) {
-    const cached = this.taskCache.get(taskId);
-    const now = Date.now();
-    if (cached && (now - cached.timestamp < this.cacheTtlMs)) {
-      return cached.data;
-    }
-    const res = await this.client.get(`/tasks/${taskId}`);
-    this.taskCache.set(taskId, { data: res.data, timestamp: now });
-    return res.data;
+    return this.get<any>(`/tasks/${taskId}`);
   }
 
   /**
@@ -126,14 +134,7 @@ export class ZentaoClient {
    * @returns Resolves with the bug details.
    */
   public async getBugDetails(bugId: string | number) {
-    const cached = this.bugCache.get(bugId);
-    const now = Date.now();
-    if (cached && (now - cached.timestamp < this.cacheTtlMs)) {
-      return cached.data;
-    }
-    const res = await this.client.get(`/bugs/${bugId}`);
-    this.bugCache.set(bugId, { data: res.data, timestamp: now });
-    return res.data;
+    return this.get<any>(`/bugs/${bugId}`);
   }
 
   /**
