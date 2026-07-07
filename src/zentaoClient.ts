@@ -150,6 +150,17 @@ export class ZentaoClient {
   }
 
   /**
+   * Retrieves details of a specific task.
+   * 
+   * @param taskId The ID of the task.
+   * @returns Resolves with the task details.
+   */
+  public async getTaskDetails(taskId: string | number) {
+    const res = await this.client.get(`/tasks/${taskId}`);
+    return res.data;
+  }
+
+  /**
    * Retrieves task modules for a specific execution.
    * 
    * @param executionId The ID of the execution.

@@ -11,6 +11,7 @@ const client = new ZentaoClient();
  * 
  * Available Tools:
  * - `zentao_get_execution_tasks`: Fetch all tasks within a sprint/execution.
+ * - `zentao_get_task_details`: Fetch full details of a specific task by ID.
  * - `zentao_get_product_bugs`: Fetch all bugs reported for a product.
  * - `zentao_get_bug_details`: Fetch full details of a specific bug by ID.
  * - `zentao_download_attachment`: Download attachments (e.g. bug reproduction videos/images) and save locally.
@@ -31,6 +32,22 @@ export function registerTools(server: McpServer) {
     },
     async ({ executionId, page = 1, limit = 500, moduleId }) => {
       const data = await client.getExecutionTasks(executionId, page, limit, moduleId);
+      return {
+        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
+    "zentao_get_task_details",
+    {
+      description: "Get detailed information of a task",
+      inputSchema: {
+        taskId: z.union([z.string(), z.number()]).describe("Task ID"),
+      }
+    },
+    async ({ taskId }) => {
+      const data = await client.getTaskDetails(taskId);
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
