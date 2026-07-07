@@ -132,24 +132,6 @@ export class ZentaoClient {
   }
 
   /**
-   * Retrieves tasks for a specific execution, with optional filters.
-   * 
-   * @param executionId The ID of the execution (sprint).
-   * @param page The page number to retrieve. Defaults to 1.
-   * @param limit The maximum number of tasks to return. Defaults to 500.
-   * @param moduleId Optional ID of the module to filter tasks by.
-   * @returns Resolves with the execution tasks data.
-   */
-  public async getExecutionTasks(executionId: string | number, page: number = 1, limit: number = 500, moduleId?: string | number) {
-    let url = `/executions/${executionId}/tasks?page=${page}&limit=${limit}`;
-    if (moduleId) {
-      url += `&moduleID=${moduleId}`;
-    }
-    const res = await this.client.get(url);
-    return res.data;
-  }
-
-  /**
    * Retrieves details of a specific task.
    * 
    * @param taskId The ID of the task.

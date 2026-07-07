@@ -11,14 +11,6 @@ async function main() {
     await client.login();
     console.log('Successfully logged in.');
 
-    console.log('\n--- Fetching execution tasks (Execution ID: 2) ---');
-    try {
-      const tasks = await client.getExecutionTasks(2, 1, 5);
-      console.log('Tasks result:', JSON.stringify(tasks, null, 2));
-    } catch (e: any) {
-      console.error('Error fetching tasks:', e.response?.data || e.message);
-    }
-
     console.log('\n--- Fetching task details (Task ID: 2) ---');
     try {
       const task = await client.getTaskDetails(2);
