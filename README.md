@@ -20,7 +20,7 @@ A Model Context Protocol (MCP) server for integrating with the Zentao API. This 
 1. Clone the repository:
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/dyno-nexsoft/zentao_mcp.git
    cd zentao_mcp
    ```
 

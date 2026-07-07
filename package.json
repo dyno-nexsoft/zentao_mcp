@@ -2,6 +2,14 @@
   "name": "@dyno181cm.nexsoft/zentao_mcp",
   "version": "1.2.1",
   "description": "Zentao MCP Server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dyno-nexsoft/zentao_mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dyno-nexsoft/zentao_mcp/issues"
+  },
+  "homepage": "https://github.com/dyno-nexsoft/zentao_mcp#readme",
   "main": "build/index.js",
   "bin": {
     "zentao_mcp": "build/index.js"
