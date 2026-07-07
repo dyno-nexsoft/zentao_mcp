@@ -55,7 +55,10 @@ Add the following to your MCP client configuration (e.g., `claude_desktop_config
   "mcpServers": {
     "zentao": {
       "command": "npx",
-      "args": ["-y", "zentao_mcp"],
+      "args": [
+        "-y",
+        "@dyno181cm.nexsoft/zentao_mcp"
+      ],
       "env": {
         "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
         "ZENTAO_ACCOUNT": "your_username",

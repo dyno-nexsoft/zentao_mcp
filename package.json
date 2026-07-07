@@ -1,10 +1,10 @@
 {
-  "name": "zentao_mcp",
+  "name": "@dyno181cm.nexsoft/zentao_mcp",
   "version": "1.0.0",
   "description": "Zentao MCP Server",
   "main": "build/index.js",
   "bin": {
-    "zentao_mcp": "./build/index.js"
+    "zentao_mcp": "build/index.js"
   },
   "type": "module",
   "files": [
