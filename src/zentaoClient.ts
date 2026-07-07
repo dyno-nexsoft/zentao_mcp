@@ -88,50 +88,6 @@ export class ZentaoClient {
   }
 
   /**
-   * Retrieves a list of users from the Zentao instance.
-   * 
-   * @param page The page number to retrieve. Defaults to 1.
-   * @param limit The number of user items to retrieve per page. Defaults to 100.
-   * @returns Resolves with the response data from the API.
-   */
-  public async getUsers(page: number = 1, limit: number = 100) {
-    const res = await this.client.get(`/users?page=${page}&limit=${limit}`);
-    return res.data;
-  }
-
-  /**
-   * Retrieves all projects from the Zentao instance.
-   * 
-   * @returns Resolves with the list of projects data.
-   */
-  public async getProjects() {
-    const res = await this.client.get('/projects');
-    return res.data;
-  }
-
-  /**
-   * Retrieves executions (sprints/stages) associated with a specific project.
-   * 
-   * @param projectId The ID of the parent project.
-   * @returns Resolves with the project's executions data.
-   */
-  public async getProjectExecutions(projectId: string | number) {
-    const res = await this.client.get(`/projects/${projectId}/executions`);
-    return res.data;
-  }
-
-  /**
-   * Retrieves details of a specific execution.
-   * 
-   * @param executionId The ID of the execution.
-   * @returns Resolves with the execution's detailed info.
-   */
-  public async getExecutionDetails(executionId: string | number) {
-    const res = await this.client.get(`/executions/${executionId}`);
-    return res.data;
-  }
-
-  /**
    * Retrieves details of a specific task.
    * 
    * @param taskId The ID of the task.
@@ -139,28 +95,6 @@ export class ZentaoClient {
    */
   public async getTaskDetails(taskId: string | number) {
     const res = await this.client.get(`/tasks/${taskId}`);
-    return res.data;
-  }
-
-  /**
-   * Retrieves task modules for a specific execution.
-   * 
-   * @param executionId The ID of the execution.
-   * @returns Resolves with the module taxonomy data.
-   */
-  public async getTaskModules(executionId: string | number) {
-    const res = await this.client.get(`/modules?type=task&id=${executionId}`);
-    return res.data;
-  }
-
-  /**
-   * Retrieves bugs associated with a specific product.
-   * 
-   * @param productId The ID of the product.
-   * @returns Resolves with the product bugs data.
-   */
-  public async getProductBugs(productId: string | number) {
-    const res = await this.client.get(`/products/${productId}/bugs`);
     return res.data;
   }
 
