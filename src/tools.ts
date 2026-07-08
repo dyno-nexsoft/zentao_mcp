@@ -179,10 +179,12 @@ export async function taskToMarkdown(rawTask: any): Promise<string> {
   const desc = htmlToMarkdown(localizedDesc);
   const attachments = await renderAttachments(parseFiles(rawTask.files));
 
+  const metaList = meta.map(m => `- ${m}`).join('\n');
+
   return [
     `# Task #${rawTask.id}: ${rawTask.name}`,
     '',
-    meta.join(' | '),
+    metaList,
     '',
     '## Description',
     desc || '*No description provided.*',
@@ -215,10 +217,12 @@ export async function bugToMarkdown(rawBug: any): Promise<string> {
   const steps = htmlToMarkdown(localizedSteps);
   const attachments = await renderAttachments(parseFiles(rawBug.files));
 
+  const metaList = meta.map(m => `- ${m}`).join('\n');
+
   return [
     `# Bug #${rawBug.id}: ${rawBug.title}`,
     '',
-    meta.join(' | '),
+    metaList,
     '',
     '## Repro Steps',
     steps || '*No steps provided.*',
