@@ -45,10 +45,22 @@ function formatUser(user: any): string {
   return String(user);
 }
 
+/** Convert a local absolute path to a valid file:// URL. */
+function toFileUrl(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/');
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    return `file:///${normalized}`;
+  }
+  if (normalized.startsWith('/')) {
+    return `file://${normalized}`;
+  }
+  return `file:///${normalized}`;
+}
+
 /**
  * Find all <img src="..."> URLs in an HTML string, download each image
  * to the local tmp directory using the authenticated ZenTao client,
- * and replace the remote src with the local file path.
+ * and replace the remote src with the local file:// URL.
  * Images already cached on disk are not re-downloaded.
  */
 async function localizeImages(html: string): Promise<string> {
@@ -67,7 +79,7 @@ async function localizeImages(html: string): Promise<string> {
       if (!fs.existsSync(localPath)) {
         await client.downloadImageToLocal(remoteUrl, localPath);
       }
-      result = result.split(remoteUrl).join(localPath);
+      result = result.split(remoteUrl).join(toFileUrl(localPath));
     } catch {
       // If download fails, keep the original remote URL
     }
@@ -121,8 +133,9 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
-    if (IMAGE_EXTS.has(f.ext)) return `- 📎 ![${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
-    return `- 📎 [${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
+    const fileUrl = toFileUrl(f.localPath);
+    if (IMAGE_EXTS.has(f.ext)) return `- 📎 ![${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
+    return `- 📎 [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
 
   return `\n## Files 📎${headerHint}\n${lines.join('\n')}\n`;
