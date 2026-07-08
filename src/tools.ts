@@ -45,6 +45,36 @@ function formatUser(user: any): string {
   return String(user);
 }
 
+/**
+ * Find all <img src="..."> URLs in an HTML string, download each image
+ * to the local tmp directory using the authenticated ZenTao client,
+ * and replace the remote src with the local file path.
+ * Images already cached on disk are not re-downloaded.
+ */
+async function localizeImages(html: string): Promise<string> {
+  if (!html) return html;
+  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+  const matches = [...html.matchAll(imgRegex)];
+  if (matches.length === 0) return html;
+
+  let result = html;
+  await Promise.all(matches.map(async (match) => {
+    const remoteUrl = match[1];
+    // Derive a stable local filename from the last path segment of the URL
+    const filename = `zentao_img_${path.basename(remoteUrl.split('?')[0])}`;
+    const localPath = path.join(os.tmpdir(), filename);
+    try {
+      if (!fs.existsSync(localPath)) {
+        await client.downloadImageToLocal(remoteUrl, localPath);
+      }
+      result = result.split(remoteUrl).join(localPath);
+    } catch {
+      // If download fails, keep the original remote URL
+    }
+  }));
+  return result;
+}
+
 /** Format a file size in bytes to a human-readable string (B / KB / MB). */
 export function formatSize(bytes: number | string | undefined | null): string {
   if (bytes === undefined || bytes === null || bytes === '') return 'unknown size';
@@ -60,12 +90,38 @@ function mcpText(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
 
-/** Render a list of file attachments as a Markdown section. Returns empty string if none. */
-function renderAttachments(files: { id: any; title: string; extension: string; size: any }[]): string {
+/** Download all attachments to local tmp dir and render them as a Markdown section with AI hints. */
+async function renderAttachments(files: { id: any; title: string; extension: string; size: any }[]): Promise<string> {
   if (!files || files.length === 0) return '';
-  const lines = files.map(
-    (f) => `- 📎 **${f.title}** (ID: ${f.id}, Extension: ${f.extension}, Size: ${formatSize(f.size)})`
-  );
+
+  const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
+  const VIDEO_EXTS = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm']);
+
+  const lines = await Promise.all(files.map(async (f) => {
+    const ext = (f.extension || '').toLowerCase();
+    const targetPath = path.join(os.tmpdir(), `zentao_file_${f.id}.${ext}`);
+
+    let localPath: string | null = null;
+    try {
+      if (fs.existsSync(targetPath)) {
+        localPath = targetPath;
+      } else {
+        localPath = await client.downloadFile(f.id, targetPath);
+      }
+    } catch {
+      // Keep localPath null if download fails
+    }
+
+    let hint = '';
+    if (localPath) {
+      if (IMAGE_EXTS.has(ext))       hint = ' — 🖼️ **[AI: Please view this image]**';
+      else if (VIDEO_EXTS.has(ext)) hint = ' — 🎬 **[AI: Please view this video]**';
+    }
+
+    const locationInfo = localPath ? `\`${localPath}\`` : `ID: ${f.id} *(download failed)*`;
+    return `- 📎 **${f.title}** (${locationInfo}, Size: ${formatSize(f.size)})${hint}`;
+  }));
+
   return `\n## Attachments\n${lines.join('\n')}\n`;
 }
 
@@ -74,7 +130,7 @@ function renderAttachments(files: { id: any; title: string; extension: string; s
 /**
  * Format a raw ZenTao task object into a human-readable Markdown document.
  */
-export function taskToMarkdown(rawTask: any): string {
+export async function taskToMarkdown(rawTask: any): Promise<string> {
   if (!rawTask) return "Task not found.";
 
   const est = rawTask.estimate ?? 0;
@@ -98,9 +154,10 @@ export function taskToMarkdown(rawTask: any): string {
     lines.push(`- **Closed By**: ${formatUser(rawTask.closedBy)}${reason}`);
   }
 
-  const desc = htmlToMarkdown(rawTask.desc);
+  const localizedDesc = await localizeImages(rawTask.desc);
+  const desc = htmlToMarkdown(localizedDesc);
   lines.push(`\n## Description\n${desc || '*No description provided.*'}`);
-  lines.push(renderAttachments(parseFiles(rawTask.files)));
+  lines.push(await renderAttachments(parseFiles(rawTask.files)));
 
   return lines.join('\n');
 }
@@ -108,7 +165,7 @@ export function taskToMarkdown(rawTask: any): string {
 /**
  * Format a raw ZenTao bug object into a human-readable Markdown document.
  */
-export function bugToMarkdown(rawBug: any): string {
+export async function bugToMarkdown(rawBug: any): Promise<string> {
   if (!rawBug) return "Bug not found.";
 
   const lines: string[] = [
@@ -128,9 +185,10 @@ export function bugToMarkdown(rawBug: any): string {
   }
   if (rawBug.closedBy) lines.push(`- **Closed By**: ${formatUser(rawBug.closedBy)}`);
 
-  const steps = htmlToMarkdown(rawBug.steps);
+  const localizedSteps = await localizeImages(rawBug.steps);
+  const steps = htmlToMarkdown(localizedSteps);
   lines.push(`\n## Steps to Reproduce\n${steps || '*No steps provided.*'}`);
-  lines.push(renderAttachments(parseFiles(rawBug.files)));
+  lines.push(await renderAttachments(parseFiles(rawBug.files)));
 
   return lines.join('\n');
 }
@@ -185,7 +243,7 @@ export function registerTools(server: McpServer) {
     },
     async ({ taskId }) => {
       const data = await client.getTaskDetails(taskId);
-      return mcpText(taskToMarkdown(data));
+      return mcpText(await taskToMarkdown(data));
     }
   );
 
@@ -199,7 +257,7 @@ export function registerTools(server: McpServer) {
     },
     async ({ bugId }) => {
       const data = await client.getBugDetails(bugId);
-      return mcpText(bugToMarkdown(data));
+      return mcpText(await bugToMarkdown(data));
     }
   );
 

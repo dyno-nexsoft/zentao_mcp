@@ -160,4 +160,33 @@ export class ZentaoClient {
       });
     });
   }
+
+  /**
+   * Downloads an image from a full authenticated URL and saves it to a local path.
+   * Uses the same authenticated Axios client so ZenTao session token is injected automatically.
+   *
+   * @param imageUrl The full image URL to download (e.g. https://zentao.../file-read-xxx.png).
+   * @param targetPath The local file path where the image should be saved.
+   * @returns A promise that resolves to the targetPath upon success, or rejects with an error.
+   */
+  public async downloadImageToLocal(imageUrl: string, targetPath: string): Promise<string> {
+    const writer = fs.createWriteStream(targetPath);
+    const res = await this.client.get(imageUrl, {
+      baseURL: '',        // override baseURL so the full URL is used as-is
+      responseType: 'stream',
+    });
+
+    return new Promise((resolve, reject) => {
+      res.data.pipe(writer);
+      let error: Error | null = null;
+      writer.on('error', err => {
+        error = err;
+        writer.close();
+        reject(err);
+      });
+      writer.on('close', () => {
+        if (!error) resolve(targetPath);
+      });
+    });
+  }
 }
