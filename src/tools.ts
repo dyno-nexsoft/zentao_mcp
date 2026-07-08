@@ -76,7 +76,7 @@ async function localizeImages(html: string): Promise<string> {
 }
 
 /** Format a file size in bytes to a human-readable string (B / KB / MB). */
-export function formatSize(bytes: number | string | undefined | null): string {
+function formatSize(bytes: number | string | undefined | null): string {
   if (bytes === undefined || bytes === null || bytes === '') return 'unknown size';
   const numBytes = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
   if (isNaN(numBytes)) return 'unknown size';
