@@ -85,8 +85,8 @@ async function localizeImages(html: string): Promise<string> {
         await client.downloadImageToLocal(remoteUrl, localPath);
       }
       const fileUrl = toFileUrl(localPath);
-      // Replace img tag with a standard hyperlink (no inline rendering, saves tokens) using image icon
-      const linkTag = `<a href="${fileUrl}">🖼️ ${linkText}</a>`;
+      // Replace img tag with a standard hyperlink (no inline rendering, saves tokens)
+      const linkTag = `<a href="${fileUrl}">${linkText}</a>`;
       result = result.split(fullTag).join(linkTag);
     } catch {
       // Keep original tag if download fails
@@ -140,17 +140,13 @@ async function renderAttachments(files: { id: any; title: string; extension: str
   else if (hasVideo) headerHint = ' *(AI: Please view the videos below)*';
 
   const lines = enriched.map((f) => {
-    if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
+    if (!f.localPath) return `- ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
     const fileUrl = toFileUrl(f.localPath);
     
-    let icon = '📎';
-    if (IMAGE_EXTS.has(f.ext))      icon = '🖼️';
-    else if (VIDEO_EXTS.has(f.ext)) icon = '🎬';
-
-    return `- ${icon} [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
+    return `- [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
 
-  return `\n## Files 📎${headerHint}\n${lines.join('\n')}\n`;
+  return `\n## Files${headerHint}\n${lines.join('\n')}\n`;
 }
 
 // ─── Public formatters ───────────────────────────────────────────────────────
