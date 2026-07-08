@@ -3,14 +3,20 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools } from "./tools.js";
 import * as dotenv from "dotenv";
+import { readFileSync } from "fs";
 
 // Initialize environment variables from .env file
 dotenv.config();
 
+// Read package.json to get the version dynamically
+const pkg = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8")
+);
+
 // Create the MCP server instance
 const server = new McpServer({
   name: "Zentao MCP Server",
-  version: "1.2.5"
+  version: pkg.version
 });
 
 // Register all Zentao-specific tools onto the server
