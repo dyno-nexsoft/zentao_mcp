@@ -1,6 +1,6 @@
 import { ZentaoClient } from '../src/zentaoClient.js';
 import * as dotenv from 'dotenv';
-import { cleanTask, cleanBug, taskToMarkdown, bugToMarkdown } from '../src/tools.js';
+import { taskToMarkdown, bugToMarkdown } from '../src/tools.js';
 
 dotenv.config();
 
@@ -17,7 +17,7 @@ async function main() {
       const task = await client.getTaskDetails(3826);
       console.log('Original desc:', JSON.stringify(task.desc));
       console.log('\nFormatted Task Markdown:');
-      console.log(taskToMarkdown(cleanTask(task)));
+      console.log(taskToMarkdown(task));
     } catch (e: any) {
       console.error('Error fetching task:', e.response?.data || e.message);
     }
@@ -27,7 +27,7 @@ async function main() {
       const bug = await client.getBugDetails(3722);
       console.log('Original steps:', JSON.stringify(bug.steps));
       console.log('\nFormatted Bug Markdown:');
-      console.log(bugToMarkdown(cleanBug(bug)));
+      console.log(bugToMarkdown(bug));
     } catch (e: any) {
       console.error('Error fetching bug:', e.response?.data || e.message);
     }

@@ -118,7 +118,8 @@ export function formatSize(bytes: number | string | undefined | null): string {
   return `${(numBytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-export function taskToMarkdown(task: any): string {
+export function taskToMarkdown(rawTask: any): string {
+  const task = cleanTask(rawTask);
   if (!task) return "Task not found.";
   let md = `# Task #${task.id}: ${task.name}\n\n`;
   md += `- **Status**: ${task.status || 'N/A'}\n`;
@@ -150,7 +151,8 @@ export function taskToMarkdown(task: any): string {
   return md;
 }
 
-export function bugToMarkdown(bug: any): string {
+export function bugToMarkdown(rawBug: any): string {
+  const bug = cleanBug(rawBug);
   if (!bug) return "Bug not found.";
   let md = `# Bug #${bug.id}: ${bug.title}\n\n`;
   md += `- **Status**: ${bug.status || 'N/A'}\n`;
@@ -190,9 +192,8 @@ export function registerTools(server: McpServer) {
     },
     async ({ taskId }) => {
       const data = await client.getTaskDetails(taskId);
-      const cleaned = cleanTask(data);
       return {
-        content: [{ type: "text", text: taskToMarkdown(cleaned) }],
+        content: [{ type: "text", text: taskToMarkdown(data) }],
       };
     }
   );
@@ -207,9 +208,8 @@ export function registerTools(server: McpServer) {
     },
     async ({ bugId }) => {
       const data = await client.getBugDetails(bugId);
-      const cleaned = cleanBug(data);
       return {
-        content: [{ type: "text", text: bugToMarkdown(cleaned) }],
+        content: [{ type: "text", text: bugToMarkdown(data) }],
       };
     }
   );
