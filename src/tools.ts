@@ -57,10 +57,22 @@ function toFileUrl(filePath: string): string {
   return `file:///${normalized}`;
 }
 
+/** Convert a local file to a Base64 data URI for safe rendering in browser/chat UI. */
+function fileToBase64(filePath: string): string {
+  try {
+    const data = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase().replace('.', '');
+    const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext || 'png'}`;
+    return `data:${mime};base64,${data.toString('base64')}`;
+  } catch {
+    return toFileUrl(filePath); // fallback to file URL if read fails
+  }
+}
+
 /**
  * Find all <img src="..."> URLs in an HTML string, download each image
  * to the local tmp directory using the authenticated ZenTao client,
- * and replace the remote src with the local file:// URL.
+ * and replace the remote src with the local Base64 data URI.
  * Images already cached on disk are not re-downloaded.
  */
 async function localizeImages(html: string): Promise<string> {
@@ -79,7 +91,7 @@ async function localizeImages(html: string): Promise<string> {
       if (!fs.existsSync(localPath)) {
         await client.downloadImageToLocal(remoteUrl, localPath);
       }
-      result = result.split(remoteUrl).join(toFileUrl(localPath));
+      result = result.split(remoteUrl).join(fileToBase64(localPath));
     } catch {
       // If download fails, keep the original remote URL
     }
@@ -133,8 +145,11 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
+    if (IMAGE_EXTS.has(f.ext)) {
+      const base64 = fileToBase64(f.localPath);
+      return `- 📎 ![${f.title}](${base64}) *(Size: ${formatSize(f.size)})*`;
+    }
     const fileUrl = toFileUrl(f.localPath);
-    if (IMAGE_EXTS.has(f.ext)) return `- 📎 ![${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
     return `- 📎 [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
 
