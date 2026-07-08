@@ -125,7 +125,7 @@ async function renderAttachments(files: { id: any; title: string; extension: str
     return `- 📎 [${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
   });
 
-  return `\n## Attachments${headerHint}\n${lines.join('\n')}\n`;
+  return `\n## Files 📎${headerHint}\n${lines.join('\n')}\n`;
 }
 
 // ─── Public formatters ───────────────────────────────────────────────────────
@@ -136,33 +136,38 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 export async function taskToMarkdown(rawTask: any): Promise<string> {
   if (!rawTask) return "Task not found.";
 
-  const est = rawTask.estimate ?? 0;
+  const est  = rawTask.estimate ?? 0;
   const cons = rawTask.consumed ?? 0;
   const left = rawTask.left ?? 0;
   const prog = rawTask.progress ?? 0;
 
-  const lines: string[] = [
-    `# Task #${rawTask.id}: ${rawTask.name}`,
-    '',
-    `- **Status**: ${rawTask.status || 'N/A'}`,
-    `- **Priority**: ${rawTask.pri || 'N/A'}`,
-    `- **Estimate / Consumed / Left**: ${est}h / ${cons}h / ${left}h (${prog}%)`,
+  // ── Compact metadata row ──
+  const meta: string[] = [
+    `**Status:** ${rawTask.status || 'N/A'}`,
+    `**Priority:** ${rawTask.pri || 'N/A'}`,
+    `**Estimate/Consumed/Left:** ${est}h / ${cons}h / ${left}h (${prog}%)`,
   ];
-
-  if (rawTask.openedBy)   lines.push(`- **Opened By**: ${formatUser(rawTask.openedBy)}`);
-  if (rawTask.assignedTo) lines.push(`- **Assigned To**: ${formatUser(rawTask.assignedTo)}`);
-  if (rawTask.finishedBy) lines.push(`- **Finished By**: ${formatUser(rawTask.finishedBy)}`);
+  if (rawTask.openedBy)   meta.push(`**Opened by:** ${formatUser(rawTask.openedBy)}`);
+  if (rawTask.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawTask.assignedTo)}`);
+  if (rawTask.finishedBy) meta.push(`**Finished by:** ${formatUser(rawTask.finishedBy)}`);
   if (rawTask.closedBy) {
-    const reason = rawTask.closedReason ? ` (Reason: ${rawTask.closedReason})` : '';
-    lines.push(`- **Closed By**: ${formatUser(rawTask.closedBy)}${reason}`);
+    const reason = rawTask.closedReason ? ` (${rawTask.closedReason})` : '';
+    meta.push(`**Closed by:** ${formatUser(rawTask.closedBy)}${reason}`);
   }
 
   const localizedDesc = await localizeImages(rawTask.desc);
   const desc = htmlToMarkdown(localizedDesc);
-  lines.push(`\n## Description\n${desc || '*No description provided.*'}`);
-  lines.push(await renderAttachments(parseFiles(rawTask.files)));
+  const attachments = await renderAttachments(parseFiles(rawTask.files));
 
-  return lines.join('\n');
+  return [
+    `# Task #${rawTask.id}: ${rawTask.name}`,
+    '',
+    meta.join(' | '),
+    '',
+    '## Description',
+    desc || '*No description provided.*',
+    attachments,
+  ].join('\n');
 }
 
 /**
@@ -171,29 +176,34 @@ export async function taskToMarkdown(rawTask: any): Promise<string> {
 export async function bugToMarkdown(rawBug: any): Promise<string> {
   if (!rawBug) return "Bug not found.";
 
-  const lines: string[] = [
-    `# Bug #${rawBug.id}: ${rawBug.title}`,
-    '',
-    `- **Status**: ${rawBug.status || 'N/A'}`,
-    `- **Severity**: ${rawBug.severity || 'N/A'}`,
-    `- **Priority**: ${rawBug.pri || 'N/A'}`,
-    `- **Type**: ${rawBug.type || 'N/A'}`,
+  // ── Compact metadata row ──
+  const meta: string[] = [
+    `**Status:** ${rawBug.status || 'N/A'}`,
+    `**Severity:** ${rawBug.severity || 'N/A'}`,
+    `**Priority:** ${rawBug.pri || 'N/A'}`,
+    `**Type:** ${rawBug.type || 'N/A'}`,
   ];
-
-  if (rawBug.openedBy)   lines.push(`- **Opened By**: ${formatUser(rawBug.openedBy)}`);
-  if (rawBug.assignedTo) lines.push(`- **Assigned To**: ${formatUser(rawBug.assignedTo)}`);
+  if (rawBug.openedBy)   meta.push(`**Opened by:** ${formatUser(rawBug.openedBy)}`);
+  if (rawBug.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawBug.assignedTo)}`);
   if (rawBug.resolvedBy) {
-    const resolution = rawBug.resolution ? ` (Resolution: ${rawBug.resolution})` : '';
-    lines.push(`- **Resolved By**: ${formatUser(rawBug.resolvedBy)}${resolution}`);
+    const resolution = rawBug.resolution ? ` (${rawBug.resolution})` : '';
+    meta.push(`**Resolved by:** ${formatUser(rawBug.resolvedBy)}${resolution}`);
   }
-  if (rawBug.closedBy) lines.push(`- **Closed By**: ${formatUser(rawBug.closedBy)}`);
+  if (rawBug.closedBy) meta.push(`**Closed by:** ${formatUser(rawBug.closedBy)}`);
 
   const localizedSteps = await localizeImages(rawBug.steps);
   const steps = htmlToMarkdown(localizedSteps);
-  lines.push(`\n## Steps to Reproduce\n${steps || '*No steps provided.*'}`);
-  lines.push(await renderAttachments(parseFiles(rawBug.files)));
+  const attachments = await renderAttachments(parseFiles(rawBug.files));
 
-  return lines.join('\n');
+  return [
+    `# Bug #${rawBug.id}: ${rawBug.title}`,
+    '',
+    meta.join(' | '),
+    '',
+    '## Repro Steps',
+    steps || '*No steps provided.*',
+    attachments,
+  ].join('\n');
 }
 
 // ─── Download handler (extracted for Single Responsibility) ──────────────────
