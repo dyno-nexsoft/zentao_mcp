@@ -97,32 +97,34 @@ async function renderAttachments(files: { id: any; title: string; extension: str
   const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
   const VIDEO_EXTS = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm']);
 
-  const lines = await Promise.all(files.map(async (f) => {
+  type EnrichedFile = { title: string; size: any; localPath: string | null; ext: string };
+
+  const enriched: EnrichedFile[] = await Promise.all(files.map(async (f) => {
     const ext = (f.extension || '').toLowerCase();
     const targetPath = path.join(os.tmpdir(), `zentao_file_${f.id}.${ext}`);
-
     let localPath: string | null = null;
     try {
-      if (fs.existsSync(targetPath)) {
-        localPath = targetPath;
-      } else {
-        localPath = await client.downloadFile(f.id, targetPath);
-      }
-    } catch {
-      // Keep localPath null if download fails
-    }
-
-    let hint = '';
-    if (localPath) {
-      if (IMAGE_EXTS.has(ext))       hint = ' — 🖼️ **[AI: Please view this image]**';
-      else if (VIDEO_EXTS.has(ext)) hint = ' — 🎬 **[AI: Please view this video]**';
-    }
-
-    const locationInfo = localPath ? `\`${localPath}\`` : `ID: ${f.id} *(download failed)*`;
-    return `- 📎 **${f.title}** (${locationInfo}, Size: ${formatSize(f.size)})${hint}`;
+      localPath = fs.existsSync(targetPath)
+        ? targetPath
+        : await client.downloadFile(f.id, targetPath);
+    } catch { /* keep null, show download failed below */ }
+    return { title: f.title, size: f.size, localPath, ext };
   }));
 
-  return `\n## Attachments\n${lines.join('\n')}\n`;
+  // Build section header hint based on media types present
+  const hasImage = enriched.some(f => f.localPath && IMAGE_EXTS.has(f.ext));
+  const hasVideo = enriched.some(f => f.localPath && VIDEO_EXTS.has(f.ext));
+  let headerHint = '';
+  if (hasImage && hasVideo) headerHint = ' *(AI: Please view the images and videos below)*';
+  else if (hasImage)        headerHint = ' *(AI: Please view the images below)*';
+  else if (hasVideo)        headerHint = ' *(AI: Please view the videos below)*';
+
+  const lines = enriched.map((f) => {
+    if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
+    return `- 📎 [${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
+  });
+
+  return `\n## Attachments${headerHint}\n${lines.join('\n')}\n`;
 }
 
 // ─── Public formatters ───────────────────────────────────────────────────────
