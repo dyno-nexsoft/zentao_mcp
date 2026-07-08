@@ -85,8 +85,8 @@ async function localizeImages(html: string): Promise<string> {
         await client.downloadImageToLocal(remoteUrl, localPath);
       }
       const fileUrl = toFileUrl(localPath);
-      // Replace img tag with a standard hyperlink (no inline rendering, saves tokens)
-      const linkTag = `<a href="${fileUrl}">📎 ${linkText}</a>`;
+      // Replace img tag with a standard hyperlink (no inline rendering, saves tokens) using image icon
+      const linkTag = `<a href="${fileUrl}">🖼️ ${linkText}</a>`;
       result = result.split(fullTag).join(linkTag);
     } catch {
       // Keep original tag if download fails
@@ -136,13 +136,18 @@ async function renderAttachments(files: { id: any; title: string; extension: str
   const hasVideo = enriched.some(f => f.localPath && VIDEO_EXTS.has(f.ext));
   let headerHint = '';
   if (hasImage && hasVideo) headerHint = ' *(AI: Please view the images and videos below)*';
-  else if (hasImage)        headerHint = ' *(AI: Please view the images below)*';
-  else if (hasVideo)        headerHint = ' *(AI: Please view the videos below)*';
+  else if (hasImage) headerHint = ' *(AI: Please view the images below)*';
+  else if (hasVideo) headerHint = ' *(AI: Please view the videos below)*';
 
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
     const fileUrl = toFileUrl(f.localPath);
-    return `- 📎 [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
+    
+    let icon = '📎';
+    if (IMAGE_EXTS.has(f.ext))      icon = '🖼️';
+    else if (VIDEO_EXTS.has(f.ext)) icon = '🎬';
+
+    return `- ${icon} [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
 
   return `\n## Files 📎${headerHint}\n${lines.join('\n')}\n`;
@@ -156,7 +161,7 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 export async function taskToMarkdown(rawTask: any): Promise<string> {
   if (!rawTask) return "Task not found.";
 
-  const est  = rawTask.estimate ?? 0;
+  const est = rawTask.estimate ?? 0;
   const cons = rawTask.consumed ?? 0;
   const left = rawTask.left ?? 0;
   const prog = rawTask.progress ?? 0;
@@ -167,7 +172,7 @@ export async function taskToMarkdown(rawTask: any): Promise<string> {
     `**Priority:** ${rawTask.pri || 'N/A'}`,
     `**Estimate/Consumed/Left:** ${est}h / ${cons}h / ${left}h (${prog}%)`,
   ];
-  if (rawTask.openedBy)   meta.push(`**Opened by:** ${formatUser(rawTask.openedBy)}`);
+  if (rawTask.openedBy) meta.push(`**Opened by:** ${formatUser(rawTask.openedBy)}`);
   if (rawTask.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawTask.assignedTo)}`);
   if (rawTask.finishedBy) meta.push(`**Finished by:** ${formatUser(rawTask.finishedBy)}`);
   if (rawTask.closedBy) {
@@ -205,24 +210,28 @@ export async function bugToMarkdown(rawBug: any): Promise<string> {
     `**Priority:** ${rawBug.pri || 'N/A'}`,
     `**Type:** ${rawBug.type || 'N/A'}`,
   ];
-  if (rawBug.openedBy)   meta.push(`**Opened by:** ${formatUser(rawBug.openedBy)}`);
-  if (rawBug.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawBug.assignedTo)}`);
+  if (rawBug.openedBy) {
+    meta.push(`**Opened by:** ${formatUser(rawBug.openedBy)}`);
+  }
+  if (rawBug.assignedTo) {
+    meta.push(`**Assigned to:** ${formatUser(rawBug.assignedTo)}`);
+  }
   if (rawBug.resolvedBy) {
     const resolution = rawBug.resolution ? ` (${rawBug.resolution})` : '';
     meta.push(`**Resolved by:** ${formatUser(rawBug.resolvedBy)}${resolution}`);
   }
-  if (rawBug.closedBy) meta.push(`**Closed by:** ${formatUser(rawBug.closedBy)}`);
+  if (rawBug.closedBy) {
+    meta.push(`**Closed by:** ${formatUser(rawBug.closedBy)}`);
+  }
 
   const localizedSteps = await localizeImages(rawBug.steps);
   const steps = htmlToMarkdown(localizedSteps);
   const attachments = await renderAttachments(parseFiles(rawBug.files));
 
-  const metaList = meta.map(m => `- ${m}`).join('\n');
-
   return [
     `# Bug #${rawBug.id}: ${rawBug.title}`,
     '',
-    metaList,
+    ...meta.map(m => `- ${m}`),
     '',
     '## Repro Steps',
     steps || '*No steps provided.*',
