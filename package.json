@@ -28,7 +28,8 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
     "axios": "^1.7.9",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "turndown": "^7.2.4"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.2",
+    "@types/turndown": "^5.0.6",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "tsx": "^4.23.0",

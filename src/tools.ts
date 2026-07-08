@@ -4,9 +4,11 @@ import * as os from "os";
 import * as path from "path";
 import fs from "fs";
 import { ZentaoClient } from "./zentaoClient.js";
+import TurndownService from "turndown";
 
 const client = new ZentaoClient();
 const activeDownloads = new Map<string, Promise<string>>();
+const turndownService = new TurndownService();
 
 /**
  * Registers Zentao-specific tools to the Model Context Protocol (MCP) server.
@@ -35,14 +37,22 @@ function parseFiles(files: any) {
   return [];
 }
 
-function cleanTask(task: any) {
+/**
+ * Simple utility to convert basic HTML to Markdown for better readability by the AI.
+ */
+function htmlToMarkdown(html: string | undefined | null): string {
+  if (!html) return '';
+  return turndownService.turndown(html);
+}
+
+export function cleanTask(task: any) {
   if (!task) return null;
   return {
     id: task.id,
     name: task.name,
     status: task.status,
     pri: task.pri,
-    desc: task.desc,
+    desc: htmlToMarkdown(task.desc),
     estimate: task.estimate,
     consumed: task.consumed,
     left: task.left,
@@ -68,7 +78,7 @@ function cleanTask(task: any) {
   };
 }
 
-function cleanBug(bug: any) {
+export function cleanBug(bug: any) {
   if (!bug) return null;
   return {
     id: bug.id,
@@ -77,7 +87,7 @@ function cleanBug(bug: any) {
     severity: bug.severity,
     pri: bug.pri,
     type: bug.type,
-    steps: bug.steps,
+    steps: htmlToMarkdown(bug.steps),
     openedBy: bug.openedBy ? {
       account: bug.openedBy.account,
       realname: bug.openedBy.realname
