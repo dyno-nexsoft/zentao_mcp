@@ -45,70 +45,6 @@ function htmlToMarkdown(html: string | undefined | null): string {
   return turndownService.turndown(html);
 }
 
-export function cleanTask(task: any) {
-  if (!task) return null;
-  return {
-    id: task.id,
-    name: task.name,
-    status: task.status,
-    pri: task.pri,
-    desc: htmlToMarkdown(task.desc),
-    estimate: task.estimate,
-    consumed: task.consumed,
-    left: task.left,
-    progress: task.progress,
-    openedBy: task.openedBy ? {
-      account: task.openedBy.account,
-      realname: task.openedBy.realname
-    } : undefined,
-    assignedTo: task.assignedTo ? {
-      account: task.assignedTo.account,
-      realname: task.assignedTo.realname
-    } : undefined,
-    finishedBy: task.finishedBy ? {
-      account: task.finishedBy.account,
-      realname: task.finishedBy.realname
-    } : undefined,
-    closedBy: task.closedBy ? {
-      account: task.closedBy.account,
-      realname: task.closedBy.realname
-    } : undefined,
-    closedReason: task.closedReason,
-    files: parseFiles(task.files)
-  };
-}
-
-export function cleanBug(bug: any) {
-  if (!bug) return null;
-  return {
-    id: bug.id,
-    title: bug.title,
-    status: bug.status,
-    severity: bug.severity,
-    pri: bug.pri,
-    type: bug.type,
-    steps: htmlToMarkdown(bug.steps),
-    openedBy: bug.openedBy ? {
-      account: bug.openedBy.account,
-      realname: bug.openedBy.realname
-    } : undefined,
-    assignedTo: bug.assignedTo ? {
-      account: bug.assignedTo.account,
-      realname: bug.assignedTo.realname
-    } : undefined,
-    resolvedBy: bug.resolvedBy ? {
-      account: bug.resolvedBy.account,
-      realname: bug.resolvedBy.realname
-    } : undefined,
-    resolution: bug.resolution,
-    closedBy: bug.closedBy ? {
-      account: bug.closedBy.account,
-      realname: bug.closedBy.realname
-    } : undefined,
-    files: parseFiles(bug.files)
-  };
-}
-
 export function formatSize(bytes: number | string | undefined | null): string {
   if (bytes === undefined || bytes === null || bytes === '') return 'unknown size';
   const numBytes = typeof bytes === 'string' ? parseInt(bytes, 10) : bytes;
@@ -118,33 +54,44 @@ export function formatSize(bytes: number | string | undefined | null): string {
   return `${(numBytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function formatUser(user: any): string {
+  if (!user) return '';
+  if (typeof user === 'object') {
+    const name = user.realname || user.account || '';
+    const account = user.account ? ` (${user.account})` : '';
+    return `${name}${account}`;
+  }
+  return String(user);
+}
+
 export function taskToMarkdown(rawTask: any): string {
-  const task = cleanTask(rawTask);
-  if (!task) return "Task not found.";
-  let md = `# Task #${task.id}: ${task.name}\n\n`;
-  md += `- **Status**: ${task.status || 'N/A'}\n`;
-  md += `- **Priority**: ${task.pri || 'N/A'}\n`;
+  if (!rawTask) return "Task not found.";
+  let md = `# Task #${rawTask.id}: ${rawTask.name}\n\n`;
+  md += `- **Status**: ${rawTask.status || 'N/A'}\n`;
+  md += `- **Priority**: ${rawTask.pri || 'N/A'}\n`;
   
-  const est = task.estimate ?? 0;
-  const cons = task.consumed ?? 0;
-  const left = task.left ?? 0;
-  const prog = task.progress ?? 0;
+  const est = rawTask.estimate ?? 0;
+  const cons = rawTask.consumed ?? 0;
+  const left = rawTask.left ?? 0;
+  const prog = rawTask.progress ?? 0;
   md += `- **Estimate / Consumed / Left**: ${est}h / ${cons}h / ${left}h (${prog}%)\n`;
   
-  if (task.openedBy) md += `- **Opened By**: ${task.openedBy.realname} (${task.openedBy.account})\n`;
-  if (task.assignedTo) md += `- **Assigned To**: ${task.assignedTo.realname} (${task.assignedTo.account})\n`;
-  if (task.finishedBy) md += `- **Finished By**: ${task.finishedBy.realname} (${task.finishedBy.account})\n`;
-  if (task.closedBy) {
-    md += `- **Closed By**: ${task.closedBy.realname} (${task.closedBy.account})`;
-    if (task.closedReason) md += ` (Reason: ${task.closedReason})`;
+  if (rawTask.openedBy) md += `- **Opened By**: ${formatUser(rawTask.openedBy)}\n`;
+  if (rawTask.assignedTo) md += `- **Assigned To**: ${formatUser(rawTask.assignedTo)}\n`;
+  if (rawTask.finishedBy) md += `- **Finished By**: ${formatUser(rawTask.finishedBy)}\n`;
+  if (rawTask.closedBy) {
+    md += `- **Closed By**: ${formatUser(rawTask.closedBy)}`;
+    if (rawTask.closedReason) md += ` (Reason: ${rawTask.closedReason})`;
     md += `\n`;
   }
   
-  md += `\n## Description\n${task.desc || '*No description provided.*'}\n`;
+  const descMarkdown = htmlToMarkdown(rawTask.desc);
+  md += `\n## Description\n${descMarkdown || '*No description provided.*'}\n`;
   
-  if (task.files && task.files.length > 0) {
+  const files = parseFiles(rawTask.files);
+  if (files && files.length > 0) {
     md += `\n## Attachments\n`;
-    task.files.forEach((f: any) => {
+    files.forEach((f: any) => {
       md += `- 📎 **${f.title}** (ID: ${f.id}, Extension: ${f.extension}, Size: ${formatSize(f.size)})\n`;
     });
   }
@@ -152,28 +99,29 @@ export function taskToMarkdown(rawTask: any): string {
 }
 
 export function bugToMarkdown(rawBug: any): string {
-  const bug = cleanBug(rawBug);
-  if (!bug) return "Bug not found.";
-  let md = `# Bug #${bug.id}: ${bug.title}\n\n`;
-  md += `- **Status**: ${bug.status || 'N/A'}\n`;
-  md += `- **Severity**: ${bug.severity || 'N/A'}\n`;
-  md += `- **Priority**: ${bug.pri || 'N/A'}\n`;
-  md += `- **Type**: ${bug.type || 'N/A'}\n`;
+  if (!rawBug) return "Bug not found.";
+  let md = `# Bug #${rawBug.id}: ${rawBug.title}\n\n`;
+  md += `- **Status**: ${rawBug.status || 'N/A'}\n`;
+  md += `- **Severity**: ${rawBug.severity || 'N/A'}\n`;
+  md += `- **Priority**: ${rawBug.pri || 'N/A'}\n`;
+  md += `- **Type**: ${rawBug.type || 'N/A'}\n`;
   
-  if (bug.openedBy) md += `- **Opened By**: ${bug.openedBy.realname} (${bug.openedBy.account})\n`;
-  if (bug.assignedTo) md += `- **Assigned To**: ${bug.assignedTo.realname} (${bug.assignedTo.account})\n`;
-  if (bug.resolvedBy) {
-    md += `- **Resolved By**: ${bug.resolvedBy.realname} (${bug.resolvedBy.account})`;
-    if (bug.resolution) md += ` (Resolution: ${bug.resolution})`;
+  if (rawBug.openedBy) md += `- **Opened By**: ${formatUser(rawBug.openedBy)}\n`;
+  if (rawBug.assignedTo) md += `- **Assigned To**: ${formatUser(rawBug.assignedTo)}\n`;
+  if (rawBug.resolvedBy) {
+    md += `- **Resolved By**: ${formatUser(rawBug.resolvedBy)}`;
+    if (rawBug.resolution) md += ` (Resolution: ${rawBug.resolution})`;
     md += `\n`;
   }
-  if (bug.closedBy) md += `- **Closed By**: ${bug.closedBy.realname} (${bug.closedBy.account})\n`;
+  if (rawBug.closedBy) md += `- **Closed By**: ${formatUser(rawBug.closedBy)}\n`;
   
-  md += `\n## Steps to Reproduce\n${bug.steps || '*No steps provided.*'}\n`;
+  const stepsMarkdown = htmlToMarkdown(rawBug.steps);
+  md += `\n## Steps to Reproduce\n${stepsMarkdown || '*No steps provided.*'}\n`;
   
-  if (bug.files && bug.files.length > 0) {
+  const files = parseFiles(rawBug.files);
+  if (files && files.length > 0) {
     md += `\n## Attachments\n`;
-    bug.files.forEach((f: any) => {
+    files.forEach((f: any) => {
       md += `- 📎 **${f.title}** (ID: ${f.id}, Extension: ${f.extension}, Size: ${formatSize(f.size)})\n`;
     });
   }
