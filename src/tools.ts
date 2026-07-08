@@ -57,43 +57,39 @@ function toFileUrl(filePath: string): string {
   return `file:///${normalized}`;
 }
 
-/** Convert a local file to a Base64 data URI for safe rendering in browser/chat UI. */
-function fileToBase64(filePath: string): string {
-  try {
-    const data = fs.readFileSync(filePath);
-    const ext = path.extname(filePath).toLowerCase().replace('.', '');
-    const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext || 'png'}`;
-    return `data:${mime};base64,${data.toString('base64')}`;
-  } catch {
-    return toFileUrl(filePath); // fallback to file URL if read fails
-  }
-}
-
 /**
- * Find all <img src="..."> URLs in an HTML string, download each image
+ * Find all <img src="..."> tags in an HTML string, download each image
  * to the local tmp directory using the authenticated ZenTao client,
- * and replace the remote src with the local Base64 data URI.
- * Images already cached on disk are not re-downloaded.
+ * and replace the entire <img> tag with an <a> link pointing to the local file:// URL.
+ * This saves AI tokens (no huge Base64 data) and avoids local file load errors in UI.
  */
 async function localizeImages(html: string): Promise<string> {
   if (!html) return html;
-  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
-  const matches = [...html.matchAll(imgRegex)];
+  const imgTagRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+  const matches = [...html.matchAll(imgTagRegex)];
   if (matches.length === 0) return html;
 
   let result = html;
   await Promise.all(matches.map(async (match) => {
+    const fullTag = match[0];
     const remoteUrl = match[1];
-    // Derive a stable local filename from the last path segment of the URL
-    const filename = `zentao_img_${path.basename(remoteUrl.split('?')[0])}`;
-    const localPath = path.join(os.tmpdir(), filename);
+
+    const altMatch = fullTag.match(/alt=["']([^"']+)["']/i);
+    const filename = path.basename(remoteUrl.split('?')[0]);
+    const linkText = altMatch ? altMatch[1] : filename;
+
+    const localFilename = `zentao_img_${filename}`;
+    const localPath = path.join(os.tmpdir(), localFilename);
     try {
       if (!fs.existsSync(localPath)) {
         await client.downloadImageToLocal(remoteUrl, localPath);
       }
-      result = result.split(remoteUrl).join(fileToBase64(localPath));
+      const fileUrl = toFileUrl(localPath);
+      // Replace img tag with a standard hyperlink (no inline rendering, saves tokens)
+      const linkTag = `<a href="${fileUrl}">📎 ${linkText}</a>`;
+      result = result.split(fullTag).join(linkTag);
     } catch {
-      // If download fails, keep the original remote URL
+      // Keep original tag if download fails
     }
   }));
   return result;
@@ -145,10 +141,6 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
-    if (IMAGE_EXTS.has(f.ext)) {
-      const base64 = fileToBase64(f.localPath);
-      return `- 📎 ![${f.title}](${base64}) *(Size: ${formatSize(f.size)})*`;
-    }
     const fileUrl = toFileUrl(f.localPath);
     return `- 📎 [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
