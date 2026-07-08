@@ -110,12 +110,9 @@ function mcpText(text: string) {
   return { content: [{ type: "text" as const, text }] };
 }
 
-/** Download all attachments to local tmp dir and render them as a Markdown section with AI hints. */
+/** Download all attachments to local tmp dir and render them as a Markdown section. */
 async function renderAttachments(files: { id: any; title: string; extension: string; size: any }[]): Promise<string> {
   if (!files || files.length === 0) return '';
-
-  const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg']);
-  const VIDEO_EXTS = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm']);
 
   type EnrichedFile = { title: string; size: any; localPath: string | null; ext: string };
 
@@ -131,14 +128,6 @@ async function renderAttachments(files: { id: any; title: string; extension: str
     return { title: f.title, size: f.size, localPath, ext };
   }));
 
-  // Build section header hint based on media types present
-  const hasImage = enriched.some(f => f.localPath && IMAGE_EXTS.has(f.ext));
-  const hasVideo = enriched.some(f => f.localPath && VIDEO_EXTS.has(f.ext));
-  let headerHint = '';
-  if (hasImage && hasVideo) headerHint = ' *(AI: Please view the images and videos below)*';
-  else if (hasImage) headerHint = ' *(AI: Please view the images below)*';
-  else if (hasVideo) headerHint = ' *(AI: Please view the videos below)*';
-
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
     const fileUrl = toFileUrl(f.localPath);
@@ -146,7 +135,7 @@ async function renderAttachments(files: { id: any; title: string; extension: str
     return `- [${f.title}](${fileUrl}) *(Size: ${formatSize(f.size)})*`;
   });
 
-  return `\n## Files${headerHint}\n${lines.join('\n')}\n`;
+  return `\n## Files\n${lines.join('\n')}\n`;
 }
 
 // ─── Public formatters ───────────────────────────────────────────────────────
