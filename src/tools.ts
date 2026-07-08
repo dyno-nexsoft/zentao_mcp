@@ -121,6 +121,7 @@ async function renderAttachments(files: { id: any; title: string; extension: str
 
   const lines = enriched.map((f) => {
     if (!f.localPath) return `- 📎 ${f.title} — *(download failed, Size: ${formatSize(f.size)})*`;
+    if (IMAGE_EXTS.has(f.ext)) return `- 📎 ![${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
     return `- 📎 [${f.title}](${f.localPath}) *(Size: ${formatSize(f.size)})*`;
   });
 
