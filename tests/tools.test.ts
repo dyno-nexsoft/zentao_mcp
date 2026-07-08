@@ -107,10 +107,12 @@ describe('Tools', () => {
       const spyGetTask = jest.spyOn(ZentaoClient.prototype, 'getTaskDetails').mockResolvedValue(mockTask);
 
       const result = await taskHandler({ taskId: 101 });
-      const content = JSON.parse(result.content[0].text);
+      const md = result.content[0].text;
 
       expect(spyGetTask).toHaveBeenCalledWith(101);
-      expect(content.desc).toBe('This is a **bold** task desc.\n\nWith a [link](http://example.com) and a  \nbreak.');
+      expect(md).toContain('# Task #101: Test Task');
+      expect(md).toContain('- **Status**: doing');
+      expect(md).toContain('This is a **bold** task desc.\n\nWith a [link](http://example.com) and a  \nbreak.');
     });
 
     it('should clean bug details and convert HTML steps to Markdown', async () => {
@@ -124,10 +126,12 @@ describe('Tools', () => {
       const spyGetBug = jest.spyOn(ZentaoClient.prototype, 'getBugDetails').mockResolvedValue(mockBug);
 
       const result = await bugHandler({ bugId: 202 });
-      const content = JSON.parse(result.content[0].text);
+      const md = result.content[0].text;
 
       expect(spyGetBug).toHaveBeenCalledWith(202);
-      expect(content.steps).toBe('1.  Step 1\n2.  Step 2 & test');
+      expect(md).toContain('# Bug #202: Test Bug');
+      expect(md).toContain('- **Status**: active');
+      expect(md).toContain('1.  Step 1\n2.  Step 2 & test');
     });
   });
 });
