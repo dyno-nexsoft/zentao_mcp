@@ -17,6 +17,8 @@ export class ZentaoClient {
   private baseUrl = process.env.ZENTAO_BASE_URL || '';
   private getCache = new Map<string, { data: any; timestamp: number }>();
   private cacheTtlMs = 2 * 60 * 1000; // 2 minutes TTL
+  /** Fix #3: In-flight request map prevents cache stampede under concurrent calls. */
+  private inFlightRequests = new Map<string, Promise<any>>();
 
   /**
    * Clears the in-memory cache for GET requests. Helpful for testing.
@@ -34,12 +36,28 @@ export class ZentaoClient {
   private async get<T>(url: string): Promise<T> {
     const cached = this.getCache.get(url);
     const now = Date.now();
-    if (cached && (now - cached.timestamp < this.cacheTtlMs)) {
+    if (cached && now - cached.timestamp < this.cacheTtlMs) {
       return cached.data;
     }
-    const res = await this.client.get<T>(url);
-    this.getCache.set(url, { data: res.data, timestamp: now });
-    return res.data;
+
+    // Fix #3: If a request for this URL is already in-flight, reuse its promise
+    // instead of firing a duplicate HTTP request (prevents cache stampede).
+    if (this.inFlightRequests.has(url)) {
+      return this.inFlightRequests.get(url) as Promise<T>;
+    }
+
+    const requestPromise = this.client
+      .get<T>(url)
+      .then((res) => {
+        this.getCache.set(url, { data: res.data, timestamp: Date.now() });
+        return res.data;
+      })
+      .finally(() => {
+        this.inFlightRequests.delete(url);
+      });
+
+    this.inFlightRequests.set(url, requestPromise);
+    return requestPromise;
   }
 
   /**
@@ -148,15 +166,15 @@ export class ZentaoClient {
     return new Promise((resolve, reject) => {
       res.data.pipe(writer);
       let error: Error | null = null;
-      writer.on('error', err => {
+      writer.on('error', (err) => {
         error = err;
         writer.close();
+        // Fix #4: remove the partial/corrupt file so future calls don't mistake it for a valid download.
+        fs.unlink(targetPath, () => { /* best-effort cleanup */ });
         reject(err);
       });
       writer.on('close', () => {
-        if (!error) {
-          resolve(targetPath);
-        }
+        if (!error) resolve(targetPath);
       });
     });
   }
@@ -179,9 +197,11 @@ export class ZentaoClient {
     return new Promise((resolve, reject) => {
       res.data.pipe(writer);
       let error: Error | null = null;
-      writer.on('error', err => {
+      writer.on('error', (err) => {
         error = err;
         writer.close();
+        // Fix #4: remove the partial/corrupt file so future calls don't mistake it for a valid download.
+        fs.unlink(targetPath, () => { /* best-effort cleanup */ });
         reject(err);
       });
       writer.on('close', () => {

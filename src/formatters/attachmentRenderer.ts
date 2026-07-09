@@ -48,7 +48,8 @@ export async function renderAttachments(
           ? targetPath
           : await client.downloadFile(f.id, targetPath);
 
-        if (localPath && downloadedImages && getMimeType(targetPath)) {
+        // Fix #5: only push each path once to avoid duplicates in the MCP response.
+        if (localPath && downloadedImages && getMimeType(targetPath) && !downloadedImages.includes(localPath)) {
           downloadedImages.push(localPath);
         }
       } catch {
