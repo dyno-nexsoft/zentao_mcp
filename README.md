@@ -1,62 +1,89 @@
 # Zentao MCP Server
 
-A Model Context Protocol (MCP) server for integrating with the Zentao API. This server provides tools to access project management data from Zentao directly through MCP-compatible interfaces.
+[![npm version](https://img.shields.io/npm/v/@dyno181cm.nexsoft/zentao_mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@dyno181cm.nexsoft/zentao_mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@dyno181cm.nexsoft/zentao_mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@dyno181cm.nexsoft/zentao_mcp)
+[![GitHub release](https://img.shields.io/github/v/tag/dyno-nexsoft/zentao_mcp?style=flat-square&label=release&color=2ea44f&logo=github)](https://github.com/dyno-nexsoft/zentao_mcp/releases)
+[![License](https://img.shields.io/github/license/dyno-nexsoft/zentao_mcp?style=flat-square)](https://github.com/dyno-nexsoft/zentao_mcp/blob/master/LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square&logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2?style=flat-square)](https://modelcontextprotocol.io)
 
-## Features
+A **Model Context Protocol (MCP)** server for integrating AI assistants (Claude, Cursor, etc.) with the [ZenTao](https://www.zentao.net) project management API.  
+Fetch task details, bug reports, and attachments — all directly inside your AI chat.
 
-- **Authentication**: Automatically handles login and token management for Zentao.
-- **MCP Tools**:
-  - `zentao_get_task_details`: Get detailed information about a specific task by ID.
-  - `zentao_get_bug_details`: Get detailed information about a specific bug.
-  - `zentao_download_attachment`: Download file attachments from ZenTao (e.g., bug/task images or videos).
+---
 
-## Requirements
+## ✨ Features
 
-- Node.js (v18 or higher recommended)
-- A Zentao instance accessible via API
+| Tool | Description |
+|---|---|
+| `zentao_get_task_details` | Fetch full details of a task by ID (status, assignee, description, attachments) |
+| `zentao_get_bug_details` | Fetch full details of a bug by ID (severity, repro steps, inline images, attachments) |
+| `zentao_download_attachment` | Download any ZenTao file attachment to local disk |
 
-## Installation
+**Under the hood:**
+- 🔐 Auto login & token refresh — no manual auth needed
+- 📦 In-memory cache (2 min TTL) + in-flight request dedup — avoids redundant API calls
+- 🖼️ Inline HTML images are automatically downloaded and served as local `file://` links
+- 📎 Attachments are downloaded and embedded as clickable local links
+- 🛡️ Corrupt partial downloads are auto-cleaned on error
 
-1. Clone the repository:
+---
 
-   ```bash
-   git clone https://github.com/dyno-nexsoft/zentao_mcp.git
-   cd zentao_mcp
-   ```
+## 📦 Installation
 
-2. Install dependencies:
+### Option 1 — `npx` (recommended, no install required)
 
-   ```bash
-   npm install
-   ```
+```bash
+npx @dyno181cm.nexsoft/zentao_mcp
+```
 
-3. Configure environment variables:
-   Create a `.env` file in the root directory and add the following configurations:
-   ```env
-   ZENTAO_BASE_URL=https://your-zentao-url.com/api.php/v1
-   ZENTAO_ACCOUNT=your_username
-   ZENTAO_PASSWORD=your_password
-   ```
+### Option 2 — Global install
 
-## Usage
+```bash
+npm install -g @dyno181cm.nexsoft/zentao_mcp
+zentao_mcp
+```
 
-This server communicates via standard input/output (`stdio`), making it compatible with any MCP client that supports stdio transport.
+### Option 3 — Clone & build
 
-### Integrating with MCP Clients (Claude Desktop, Cursor, etc.)
+```bash
+git clone https://github.com/dyno-nexsoft/zentao_mcp.git
+cd zentao_mcp
+npm install
+npm run build
+```
 
-Once published to npm or GitHub, users can integrate this server into their MCP clients easily. Add the following to your MCP client configuration (e.g., `claude_desktop_config.json`):
+---
+
+## ⚙️ Configuration
+
+Create a `.env` file in the project root (or pass via MCP client `env` block):
+
+```env
+ZENTAO_BASE_URL=https://your-zentao-url.com/zentao/api.php/v1
+ZENTAO_ACCOUNT=your_username
+ZENTAO_PASSWORD=your_password
+```
+
+---
+
+## 🔌 MCP Client Integration
+
+This server communicates via **stdio transport** — compatible with any MCP client.
+
+### Claude Desktop / Cursor / Windsurf
+
+Add to your MCP client config (e.g. `claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
     "zentao": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@dyno181cm.nexsoft/zentao_mcp"
-      ],
+      "args": ["-y", "@dyno181cm.nexsoft/zentao_mcp"],
       "env": {
-        "ZENTAO_BASE_URL": "https://your-zentao-url.com/api.php/v1",
+        "ZENTAO_BASE_URL": "https://your-zentao-url.com/zentao/api.php/v1",
         "ZENTAO_ACCOUNT": "your_username",
         "ZENTAO_PASSWORD": "your_password"
       }
@@ -65,17 +92,67 @@ Once published to npm or GitHub, users can integrate this server into their MCP 
 }
 ```
 
-### Available Tools
+---
 
-- **`zentao_get_task_details`**
-  - **Inputs:**
-    - `taskId` (string | number) - Required. Task ID.
+## 🛠️ Available Tools
 
-- **`zentao_get_bug_details`**
-  - **Inputs:**
-    - `bugId` (string | number) - Required. Bug ID.
+### `zentao_get_task_details`
+Get full details of a ZenTao task.
 
-- **`zentao_download_attachment`**
-  - **Inputs:**
-    - `fileId` (string | number) - Required. File ID to download.
-    - `extension` (string) - Optional. File extension (e.g., mp4, png).
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `taskId` | `string \| number` | ✅ | Task ID |
+
+### `zentao_get_bug_details`
+Get full details of a ZenTao bug, including repro steps and inline images.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `bugId` | `string \| number` | ✅ | Bug ID |
+
+### `zentao_download_attachment`
+Download a ZenTao file attachment to local disk.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `fileId` | `string \| number` | ✅ | File ID to download |
+| `extension` | `string` | ❌ | File extension hint (e.g. `mp4`, `png`) |
+
+---
+
+## 🧑‍💻 Development
+
+```bash
+npm run build      # Compile TypeScript
+npm run dev        # Watch mode
+npm test           # Unit tests (Jest)
+npm run test:api   # Live API integration test
+```
+
+### Project structure
+
+```
+src/
+├── index.ts                  # MCP server entry point
+├── zentaoClient.ts           # Axios client: auth, cache, dedup
+├── tools.ts                  # Thin orchestrator + backward-compat exports
+├── utils/
+│   ├── fileUtils.ts          # toFileUrl · getMimeType · formatSize
+│   ├── markdownUtils.ts      # htmlToMarkdown · parseFiles · formatUser
+│   └── mcpResponse.ts        # mcpText · buildMcpResponse
+├── formatters/
+│   ├── imageLocalizer.ts     # Inline <img> → local file:// link
+│   ├── attachmentRenderer.ts # Attachments → Markdown ## Files section
+│   ├── taskFormatter.ts      # taskToMarkdown
+│   └── bugFormatter.ts       # bugToMarkdown
+└── tools/
+    ├── taskTool.ts           # zentao_get_task_details registration
+    ├── bugTool.ts            # zentao_get_bug_details registration
+    └── downloadTool.ts       # zentao_download_attachment registration
+```
+
+---
+
+## 📄 License
+
+[MIT](./LICENSE) © [dyno-nexsoft](https://github.com/dyno-nexsoft)
