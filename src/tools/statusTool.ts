@@ -35,9 +35,13 @@ export function registerStatusTools(server: McpServer, client: ZentaoClient): vo
       if (action === "finish") {
         // Fetch task details to get realStarted / estStarted if not provided (Zentao requires them)
         const task = await client.getTaskDetails(taskId);
-        payload.realStarted = realStarted || task.realStarted || task.estStarted || new Date().toISOString().split("T")[0];
+        let taskRealStarted = task.realStarted || task.estStarted || "";
+        if (taskRealStarted.includes("T")) {
+          taskRealStarted = taskRealStarted.split("T")[0];
+        }
+        payload.realStarted = realStarted || taskRealStarted || new Date().toISOString().split("T")[0];
         payload.finishedDate = finishedDate || new Date().toISOString().split("T")[0];
-        payload.consumed = consumed !== undefined ? consumed : (task.consumed || 0);
+        payload.currentConsumed = consumed !== undefined ? consumed : (task.consumed || task.estimate || 1);
         if (assignedTo) payload.assignedTo = assignedTo;
       } else if (action === "start") {
         payload.realStarted = realStarted || new Date().toISOString().split("T")[0];
