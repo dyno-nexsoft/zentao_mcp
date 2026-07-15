@@ -2,6 +2,7 @@ import { ZentaoClient } from "../zentaoClient.js";
 import { htmlToMarkdown, parseFiles, formatUser } from "../utils/markdownUtils.js";
 import { localizeImages } from "./imageLocalizer.js";
 import { renderAttachments } from "./attachmentRenderer.js";
+import { renderHistoryAndComments } from "./actionFormatter.js";
 
 /**
  * Format a raw ZenTao bug object into a human-readable Markdown document.
@@ -37,14 +38,23 @@ export async function bugToMarkdown(
   const localizedSteps = await localizeImages(rawBug.steps, client, downloadedImages);
   const steps           = htmlToMarkdown(localizedSteps);
   const attachments     = await renderAttachments(parseFiles(rawBug.files), client, downloadedImages);
+  const historySection = await renderHistoryAndComments(rawBug.actions, client, downloadedImages);
 
-  return [
+  const parts = [
     `# Bug #${rawBug.id}: ${rawBug.title}`,
     '',
     ...meta.map((m) => `- ${m}`),
     '',
     '## Repro Steps',
     steps || '*No steps provided.*',
-    attachments,
-  ].join('\n');
+  ];
+
+  if (attachments) {
+    parts.push(attachments);
+  }
+  if (historySection) {
+    parts.push(historySection);
+  }
+
+  return parts.join('\n');
 }

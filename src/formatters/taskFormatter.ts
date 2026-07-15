@@ -2,6 +2,7 @@ import { ZentaoClient } from "../zentaoClient.js";
 import { htmlToMarkdown, parseFiles, formatUser } from "../utils/markdownUtils.js";
 import { localizeImages } from "./imageLocalizer.js";
 import { renderAttachments } from "./attachmentRenderer.js";
+import { renderHistoryAndComments } from "./actionFormatter.js";
 
 /**
  * Format a raw ZenTao task object into a human-readable Markdown document.
@@ -41,14 +42,23 @@ export async function taskToMarkdown(
   const localizedDesc = await localizeImages(rawTask.desc, client, downloadedImages);
   const desc           = htmlToMarkdown(localizedDesc);
   const attachments    = await renderAttachments(parseFiles(rawTask.files), client, downloadedImages);
+  const historySection = await renderHistoryAndComments(rawTask.actions, client, downloadedImages);
 
-  return [
+  const parts = [
     `# Task #${rawTask.id}: ${rawTask.name}`,
     '',
     ...meta.map((m) => `- ${m}`),
     '',
     '## Description',
     desc || '*No description provided.*',
-    attachments,
-  ].join('\n');
+  ];
+
+  if (attachments) {
+    parts.push(attachments);
+  }
+  if (historySection) {
+    parts.push(historySection);
+  }
+
+  return parts.join('\n');
 }
