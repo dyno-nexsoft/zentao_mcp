@@ -1,6 +1,10 @@
 import TurndownService from "turndown";
 
-const turndownService = new TurndownService();
+const turndownService = new TurndownService({
+  headingStyle: 'atx',       // Use `#` headings instead of underline style
+  bulletListMarker: '-',     // Consistent `-` for unordered lists
+  codeBlockStyle: 'fenced',  // Use ``` for code blocks
+});
 
 /** Convert HTML to Markdown for better AI readability. */
 export function htmlToMarkdown(html: string | undefined | null): string {
@@ -22,7 +26,7 @@ export function parseFiles(
     size: f.size,
   });
   if (Array.isArray(files)) {
-    return files.filter(Boolean).map(mapper); // Fix #8: filter null/undefined items
+    return files.filter(Boolean).map(mapper); // filter null/undefined items
   }
   if (typeof files === "object") {
     return Object.values<any>(files).filter(Boolean).map(mapper);

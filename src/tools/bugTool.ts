@@ -23,7 +23,7 @@ export function registerBugTool(server: McpServer, client: ZentaoClient): void {
       const data = await client.getBugDetails(bugId);
       const downloadedImages: string[] = [];
       const markdown = await bugToMarkdown(data, client, downloadedImages);
-      return buildMcpResponse(markdown, downloadedImages);
+      return await buildMcpResponse(markdown, downloadedImages);
     }
   );
 }

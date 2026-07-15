@@ -23,7 +23,7 @@ export function registerTaskTool(server: McpServer, client: ZentaoClient): void 
       const data = await client.getTaskDetails(taskId);
       const downloadedImages: string[] = [];
       const markdown = await taskToMarkdown(data, client, downloadedImages);
-      return buildMcpResponse(markdown, downloadedImages);
+      return await buildMcpResponse(markdown, downloadedImages);
     }
   );
 }

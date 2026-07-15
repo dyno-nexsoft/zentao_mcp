@@ -1,8 +1,34 @@
 import axios, { AxiosInstance } from 'axios';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
+import * as stream from 'stream';
 
 dotenv.config();
+
+/**
+ * Resolution label map for bug actions.
+ * Defined at module level to avoid re-allocating the object on every call to
+ * `generateActionDesc`.
+ */
+const RESOLUTION_LABEL_MAP: Record<string, string> = {
+  fixed:       '已解决',
+  design:      '设计如此',
+  duplicate:   '重复Bug',
+  external:    '外部原因',
+  notrepro:    '无法重现',
+  postponed:   '延期处理',
+  willnotfix:  '不予解决',
+  tostory:     '转为需求',
+};
+
+/**
+ * User fields that may be stored as a plain account string in the classic API
+ * and need to be normalised to `{ account, realname }` objects.
+ */
+const USER_FIELDS = [
+  'openedBy', 'assignedTo', 'resolvedBy',
+  'closedBy', 'finishedBy', 'canceledBy', 'lastEditedBy',
+] as const;
 
 /**
  * Client for communicating with the Zentao API.
@@ -17,8 +43,24 @@ export class ZentaoClient {
   private baseUrl = process.env.ZENTAO_BASE_URL || '';
   private getCache = new Map<string, { data: any; timestamp: number }>();
   private cacheTtlMs = 2 * 60 * 1000; // 2 minutes TTL
-  /** Fix #3: In-flight request map prevents cache stampede under concurrent calls. */
+  /** In-flight request map prevents cache stampede under concurrent calls. */
   private inFlightRequests = new Map<string, Promise<any>>();
+
+  // ─── Computed properties ─────────────────────────────────────────────────────
+
+  /**
+   * Returns the web base URL (without the API path suffix).
+   * Used by both `getFallbackClassicData` and `addComment` to avoid duplicating
+   * the same string-split logic in two places.
+   */
+  private get webBaseUrl(): string {
+    if (this.baseUrl.includes('/api.php/v1')) {
+      return this.baseUrl.split('/api.php/v1')[0];
+    }
+    return this.baseUrl.split('/api/v1')[0];
+  }
+
+  // ─── Cache helpers ────────────────────────────────────────────────────────────
 
   /**
    * Clears the in-memory cache for GET requests. Helpful for testing.
@@ -40,7 +82,7 @@ export class ZentaoClient {
       return cached.data;
     }
 
-    // Fix #3: If a request for this URL is already in-flight, reuse its promise
+    // If a request for this URL is already in-flight, reuse its promise
     // instead of firing a duplicate HTTP request (prevents cache stampede).
     if (this.inFlightRequests.has(url)) {
       return this.inFlightRequests.get(url) as Promise<T>;
@@ -59,6 +101,8 @@ export class ZentaoClient {
     this.inFlightRequests.set(url, requestPromise);
     return requestPromise;
   }
+
+  // ─── Constructor & interceptors ───────────────────────────────────────────────
 
   /**
    * Initializes the Axios client with base configurations and registers interceptors
@@ -107,6 +151,8 @@ export class ZentaoClient {
     );
   }
 
+  // ─── Authentication ───────────────────────────────────────────────────────────
+
   /**
    * Performs authentication request to Zentao API to obtain a token.
    * Updates the internal token state upon successful login.
@@ -128,6 +174,8 @@ export class ZentaoClient {
     }
   }
 
+  // ─── Private helpers ──────────────────────────────────────────────────────────
+
   /**
    * Helper to generate standard action descriptions when they are not present in classic API.
    */
@@ -136,20 +184,8 @@ export class ZentaoClient {
     let extraName = act.extra || '';
     if (userMap[extraName]) {
       extraName = userMap[extraName];
-    } else {
-      const resMap: Record<string, string> = {
-        'fixed': '已解决',
-        'design': '设计如此',
-        'duplicate': '重复Bug',
-        'external': '外部原因',
-        'notrepro': '无法重现',
-        'postponed': '延期处理',
-        'willnotfix': '不予解决',
-        'tostory': '转为需求',
-      };
-      if (resMap[extraName]) {
-        extraName = resMap[extraName];
-      }
+    } else if (RESOLUTION_LABEL_MAP[extraName]) {
+      extraName = RESOLUTION_LABEL_MAP[extraName];
     }
 
     switch (act.action) {
@@ -191,10 +227,7 @@ export class ZentaoClient {
    * Fetches classic JSON API fallback data when REST API returns empty/errors.
    */
   private async getFallbackClassicData(type: 'bug' | 'task', id: string | number): Promise<any> {
-    const webBaseUrl = this.baseUrl.includes('/api.php/v1')
-      ? this.baseUrl.split('/api.php/v1')[0]
-      : this.baseUrl.split('/api/v1')[0];
-    const url = `${webBaseUrl}/${type}-view-${id}.json`;
+    const url = `${this.webBaseUrl}/${type}-view-${id}.json`;
     
     const res = await this.client.get(url, {
       baseURL: '', // override baseURL
@@ -209,8 +242,7 @@ export class ZentaoClient {
           const userMap = detailData.users || {};
           
           // Normalize user fields
-          const userFields = ['openedBy', 'assignedTo', 'resolvedBy', 'closedBy', 'finishedBy', 'canceledBy', 'lastEditedBy'];
-          for (const field of userFields) {
+          for (const field of USER_FIELDS) {
             const val = entity[field];
             if (val && typeof val === 'string') {
               entity[field] = {
@@ -251,6 +283,62 @@ export class ZentaoClient {
   }
 
   /**
+   * Generic helper that fetches entity details from the REST API and falls back
+   * to the classic JSON API when the REST response is empty or throws an error.
+   * Caches the fallback result under the REST API key so subsequent calls are fast.
+   *
+   * @param restUrl   The REST API path (e.g. `/tasks/1`).
+   * @param type      Entity type passed to `getFallbackClassicData`.
+   * @param id        Entity ID passed to `getFallbackClassicData`.
+   */
+  private async getWithFallback(restUrl: string, type: 'bug' | 'task', id: string | number): Promise<any> {
+    const runFallback = async () => {
+      const data = await this.getFallbackClassicData(type, id);
+      // Cache the fallback result under the REST key so repeated calls are fast.
+      this.getCache.set(restUrl, { data, timestamp: Date.now() });
+      return data;
+    };
+
+    try {
+      const data = await this.get<any>(restUrl);
+      if (!data || data === '') {
+        return runFallback();
+      }
+      return data;
+    } catch {
+      return runFallback();
+    }
+  }
+
+  /**
+   * Shared stream-to-file helper used by `downloadFile` and `downloadImageToLocal`.
+   * Pipes a readable stream to a local file path, removing the partial file on error.
+   *
+   * @param readable    A Node.js Readable stream (axios response body).
+   * @param targetPath  The local file path to write to.
+   * @returns Resolves with `targetPath` on success.
+   */
+  private pipeStreamToFile(readable: stream.Readable, targetPath: string): Promise<string> {
+    const writer = fs.createWriteStream(targetPath);
+    return new Promise((resolve, reject) => {
+      readable.pipe(writer);
+      let writeError: Error | null = null;
+      writer.on('error', (err) => {
+        writeError = err;
+        writer.close();
+        // Remove the partial/corrupt file so future calls don't mistake it for a valid download.
+        fs.unlink(targetPath, () => { /* best-effort cleanup */ });
+        reject(err);
+      });
+      writer.on('close', () => {
+        if (!writeError) resolve(targetPath);
+      });
+    });
+  }
+
+  // ─── Public API ───────────────────────────────────────────────────────────────
+
+  /**
    * Retrieves details of a specific task.
    * Checks the cache first, otherwise fetches from API.
    * Falls back to classic JSON API if REST API returns empty/invalid response.
@@ -259,23 +347,7 @@ export class ZentaoClient {
    * @returns Resolves with the task details.
    */
   public async getTaskDetails(taskId: string | number) {
-    try {
-      const task = await this.get<any>(`/tasks/${taskId}`);
-      if (!task || task === "") {
-        const fallbackTask = await this.getFallbackClassicData('task', taskId);
-        this.getCache.set(`/tasks/${taskId}`, { data: fallbackTask, timestamp: Date.now() });
-        return fallbackTask;
-      }
-      return task;
-    } catch (error) {
-      try {
-        const fallbackTask = await this.getFallbackClassicData('task', taskId);
-        this.getCache.set(`/tasks/${taskId}`, { data: fallbackTask, timestamp: Date.now() });
-        return fallbackTask;
-      } catch (fallbackError) {
-        throw error; // throw original error if fallback also fails
-      }
-    }
+    return this.getWithFallback(`/tasks/${taskId}`, 'task', taskId);
   }
 
   /**
@@ -287,23 +359,7 @@ export class ZentaoClient {
    * @returns Resolves with the bug details.
    */
   public async getBugDetails(bugId: string | number) {
-    try {
-      const bug = await this.get<any>(`/bugs/${bugId}`);
-      if (!bug || bug === "") {
-        const fallbackBug = await this.getFallbackClassicData('bug', bugId);
-        this.getCache.set(`/bugs/${bugId}`, { data: fallbackBug, timestamp: Date.now() });
-        return fallbackBug;
-      }
-      return bug;
-    } catch (error) {
-      try {
-        const fallbackBug = await this.getFallbackClassicData('bug', bugId);
-        this.getCache.set(`/bugs/${bugId}`, { data: fallbackBug, timestamp: Date.now() });
-        return fallbackBug;
-      } catch (fallbackError) {
-        throw error; // throw original error if fallback also fails
-      }
-    }
+    return this.getWithFallback(`/bugs/${bugId}`, 'bug', bugId);
   }
 
   /**
@@ -314,25 +370,10 @@ export class ZentaoClient {
    * @returns A promise that resolves to the targetPath upon success, or rejects with an error.
    */
   public async downloadFile(fileId: string | number, targetPath: string): Promise<string> {
-    const writer = fs.createWriteStream(targetPath);
     const res = await this.client.get(`/files/${fileId}`, {
       responseType: 'stream',
     });
-
-    return new Promise((resolve, reject) => {
-      res.data.pipe(writer);
-      let error: Error | null = null;
-      writer.on('error', (err) => {
-        error = err;
-        writer.close();
-        // Fix #4: remove the partial/corrupt file so future calls don't mistake it for a valid download.
-        fs.unlink(targetPath, () => { /* best-effort cleanup */ });
-        reject(err);
-      });
-      writer.on('close', () => {
-        if (!error) resolve(targetPath);
-      });
-    });
+    return this.pipeStreamToFile(res.data, targetPath);
   }
 
   /**
@@ -344,26 +385,11 @@ export class ZentaoClient {
    * @returns A promise that resolves to the targetPath upon success, or rejects with an error.
    */
   public async downloadImageToLocal(imageUrl: string, targetPath: string): Promise<string> {
-    const writer = fs.createWriteStream(targetPath);
     const res = await this.client.get(imageUrl, {
       baseURL: '',        // override baseURL so the full URL is used as-is
       responseType: 'stream',
     });
-
-    return new Promise((resolve, reject) => {
-      res.data.pipe(writer);
-      let error: Error | null = null;
-      writer.on('error', (err) => {
-        error = err;
-        writer.close();
-        // Fix #4: remove the partial/corrupt file so future calls don't mistake it for a valid download.
-        fs.unlink(targetPath, () => { /* best-effort cleanup */ });
-        reject(err);
-      });
-      writer.on('close', () => {
-        if (!error) resolve(targetPath);
-      });
-    });
+    return this.pipeStreamToFile(res.data, targetPath);
   }
 
   /**
@@ -414,10 +440,7 @@ export class ZentaoClient {
       await this.login();
     }
 
-    const webBaseUrl = this.baseUrl.includes('/api.php/v1')
-      ? this.baseUrl.split('/api.php/v1')[0]
-      : this.baseUrl.split('/api/v1')[0];
-    const url = `${webBaseUrl}/action-comment-${type}-${id}.json?zentaosid=${this.token}`;
+    const url = `${this.webBaseUrl}/action-comment-${type}-${id}.json?zentaosid=${this.token}`;
     
     // Clear the cache so subsequent fetches get the new comment
     this.clearCache();

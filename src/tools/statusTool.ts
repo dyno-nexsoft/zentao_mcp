@@ -57,7 +57,7 @@ export function registerStatusTools(server: McpServer, client: ZentaoClient): vo
       const markdown = await taskToMarkdown(updatedTask, client, downloadedImages);
       const output = `### Successfully updated task status to '${updatedTask.status || "updated"}'!\n\n${markdown}`;
       
-      return buildMcpResponse(output, downloadedImages);
+      return await buildMcpResponse(output, downloadedImages);
     }
   );
 
@@ -97,7 +97,7 @@ export function registerStatusTools(server: McpServer, client: ZentaoClient): vo
       const markdown = await bugToMarkdown(updatedBug, client, downloadedImages);
       const output = `### Successfully updated bug status to '${updatedBug.status || "updated"}'!\n\n${markdown}`;
       
-      return buildMcpResponse(output, downloadedImages);
+      return await buildMcpResponse(output, downloadedImages);
     }
   );
 }

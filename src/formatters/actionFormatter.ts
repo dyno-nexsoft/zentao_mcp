@@ -1,10 +1,7 @@
 import { ZentaoClient } from "../zentaoClient.js";
 import { htmlToMarkdown, parseFiles } from "../utils/markdownUtils.js";
 import { localizeImages } from "./imageLocalizer.js";
-import { toFileUrl, formatSize } from "../utils/fileUtils.js";
-import * as path from "path";
-import * as os from "os";
-import fs from "fs";
+import { renderAttachments } from "./attachmentRenderer.js";
 
 /**
  * Normalizes and formats the history/comments/actions list into a clean Markdown block.
@@ -58,35 +55,22 @@ export async function renderHistoryAndComments(
       }
     }
 
-    // 3. Format files if present in action
+    // 3. Format files if present in action — delegated to renderAttachments
     let filesStr = "";
     if (act.files) {
       const parsedFiles = parseFiles(act.files);
       if (parsedFiles.length > 0) {
-        const fileLinks: string[] = [];
-        for (const f of parsedFiles) {
-          const ext = (f.extension || '').toLowerCase();
-          const targetPath = path.join(os.tmpdir(), `zentao_file_${f.id}.${ext}`);
-          let localPath: string | null = null;
-          try {
-            localPath = fs.existsSync(targetPath)
-              ? targetPath
-              : await client.downloadFile(f.id, targetPath);
-
-            if (localPath && downloadedImages && !downloadedImages.includes(localPath)) {
-              downloadedImages.push(localPath);
-            }
-          } catch {
-            // ignore download error
+        // renderAttachments returns a full "## Files\n..." block; for inline action
+        // files we extract only the list items to keep the timeline compact.
+        const attachmentBlock = await renderAttachments(parsedFiles, client, downloadedImages);
+        if (attachmentBlock) {
+          // Strip the section header and trim, then indent as a sub-item.
+          const listContent = attachmentBlock
+            .replace(/^\s*## Files\s*\n/, '')
+            .trim();
+          if (listContent) {
+            filesStr = `\n  - *Attachments:* ${listContent.replace(/^- /gm, '').replace(/\n- /g, ', ')}`;
           }
-          if (localPath) {
-            fileLinks.push(`[${f.title}](${toFileUrl(localPath)}) *(Size: ${formatSize(f.size)})*`);
-          } else {
-            fileLinks.push(`[${f.title}] *(download failed)*`);
-          }
-        }
-        if (fileLinks.length > 0) {
-          filesStr = `\n  - *Attachments:* ${fileLinks.join(", ")}`;
         }
       }
     }

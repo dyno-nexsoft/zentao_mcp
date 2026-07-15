@@ -86,6 +86,8 @@ export async function localizeImages(
         replacements.set(fullTag, linkTag);
       } catch {
         // Keep original tag if download fails.
+        // Ensure in-flight entry is cleared even on unexpected errors.
+        inFlightImageDownloads.delete(remoteUrl);
       }
     })
   );

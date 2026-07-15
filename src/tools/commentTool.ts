@@ -37,7 +37,7 @@ export function registerCommentTool(server: McpServer, client: ZentaoClient): vo
         markdown.trim() || "*No history or comments found.*"
       ].join("\n\n");
 
-      return buildMcpResponse(output, downloadedImages);
+      return await buildMcpResponse(output, downloadedImages);
     }
   );
 

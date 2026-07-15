@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-07-15
+
+### Refactored
+- **`zentaoClient.ts`**: Extracted `webBaseUrl` private getter to eliminate duplicated URL-parsing logic shared between `getFallbackClassicData` and `addComment`.
+- **`zentaoClient.ts`**: Extracted `pipeStreamToFile()` private helper; `downloadFile` and `downloadImageToLocal` now share a single stream-to-file implementation.
+- **`zentaoClient.ts`**: Extracted `getWithFallback()` generic private helper; `getTaskDetails` and `getBugDetails` no longer duplicate the REST → classic fallback try/catch pattern.
+- **`zentaoClient.ts`**: Promoted `RESOLUTION_LABEL_MAP` and `USER_FIELDS` to module-level constants to avoid object re-allocation on every `generateActionDesc` call.
+- **`actionFormatter.ts`**: Removed direct `fs`/`path`/`os` imports; file downloads inside action items now delegate to `renderAttachments()` (Single Responsibility Principle).
+- **`imageLocalizer.ts`**: Added explicit `inFlightImageDownloads.delete()` in the `catch` block to guarantee Map cleanup even when `downloadImageToLocal` throws unexpectedly.
+- **`markdownUtils.ts`**: Configured `TurndownService` with `headingStyle: 'atx'`, `bulletListMarker: '-'`, and `codeBlockStyle: 'fenced'` for consistent Markdown output.
+- **`mcpResponse.ts`**: `buildMcpResponse` is now `async` and uses `fs.promises` + `Promise.all` for concurrent, non-blocking image reads.
+
+### Tests
+- Added `tests/formatters.test.ts` with 15 new unit tests covering `taskToMarkdown`, `bugToMarkdown`, and `renderHistoryAndComments`.
+
+---
+
 ## [1.4.0] - 2026-07-15
 
 ### Added
