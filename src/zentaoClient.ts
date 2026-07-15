@@ -191,7 +191,9 @@ export class ZentaoClient {
    * Fetches classic JSON API fallback data when REST API returns empty/errors.
    */
   private async getFallbackClassicData(type: 'bug' | 'task', id: string | number): Promise<any> {
-    const webBaseUrl = this.baseUrl.split('/api.php/v1')[0];
+    const webBaseUrl = this.baseUrl.includes('/api.php/v1')
+      ? this.baseUrl.split('/api.php/v1')[0]
+      : this.baseUrl.split('/api/v1')[0];
     const url = `${webBaseUrl}/${type}-view-${id}.json`;
     
     const res = await this.client.get(url, {
@@ -398,5 +400,47 @@ export class ZentaoClient {
    */
   public async updateBugStatus(bugId: string | number, action: string, payload: any) {
     return this.post<any>(`/bugs/${bugId}/${action}`, payload);
+  }
+
+  /**
+   * Adds a comment to a task or a bug using the classic action comment endpoint.
+   * 
+   * @param type The object type ('task' or 'bug').
+   * @param id The ID of the object.
+   * @param comment The text of the comment to add.
+   */
+  public async addComment(type: 'task' | 'bug', id: string | number, comment: string): Promise<any> {
+    if (!this.token) {
+      await this.login();
+    }
+
+    const webBaseUrl = this.baseUrl.includes('/api.php/v1')
+      ? this.baseUrl.split('/api.php/v1')[0]
+      : this.baseUrl.split('/api/v1')[0];
+    const url = `${webBaseUrl}/action-comment-${type}-${id}.json?zentaosid=${this.token}`;
+    
+    // Clear the cache so subsequent fetches get the new comment
+    this.clearCache();
+
+    const params = new URLSearchParams();
+    params.append('comment', comment);
+
+    const res = await this.client.post(url, params, {
+      baseURL: '', // override baseURL
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    if (res.status === 200 && typeof res.data === 'string' && res.data.includes('reload')) {
+      return { result: 'success', message: 'Comment added successfully' };
+    }
+    
+    const responseData = typeof res.data === 'string' && res.data.startsWith('{') ? JSON.parse(res.data) : res.data;
+    if (responseData && (responseData.status === 'success' || responseData.result === 'success')) {
+      return { result: 'success', message: 'Comment added successfully' };
+    }
+
+    throw new Error(`Failed to add comment to ${type} #${id}. Response: ${typeof res.data === 'string' ? res.data.substring(0, 200) : JSON.stringify(res.data)}`);
   }
 }

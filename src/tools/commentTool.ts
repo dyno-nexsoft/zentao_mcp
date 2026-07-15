@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ZentaoClient } from "../zentaoClient.js";
 import { renderHistoryAndComments } from "../formatters/actionFormatter.js";
-import { buildMcpResponse } from "../utils/mcpResponse.js";
+import { buildMcpResponse, mcpText } from "../utils/mcpResponse.js";
 
 /**
  * Register the `zentao_get_comments` MCP tool on the given server.
@@ -38,6 +38,22 @@ export function registerCommentTool(server: McpServer, client: ZentaoClient): vo
       ].join("\n\n");
 
       return buildMcpResponse(output, downloadedImages);
+    }
+  );
+
+  server.registerTool(
+    "zentao_add_comment",
+    {
+      description: "Add a comment/remark to a task or a bug",
+      inputSchema: {
+        type: z.enum(["task", "bug"]).describe("Type of the object ('task' or 'bug')"),
+        id: z.union([z.string(), z.number()]).describe("Task or Bug ID"),
+        comment: z.string().describe("Comment content"),
+      },
+    },
+    async ({ type, id, comment }) => {
+      const result = await client.addComment(type, id, comment);
+      return mcpText(result.message);
     }
   );
 }

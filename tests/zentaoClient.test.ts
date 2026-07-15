@@ -212,7 +212,7 @@ describe('ZentaoClient', () => {
       
       // Verify REST API and Classic API were called
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/bugs/3');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/api/v1/bug-view-3.json', { baseURL: '' });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/bug-view-3.json', { baseURL: '' });
       
       // Verify data normalization
       expect(result.id).toBe(3);
@@ -254,7 +254,7 @@ describe('ZentaoClient', () => {
       
       // Verify REST API and Classic API were called
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tasks/4');
-      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/api/v1/task-view-4.json', { baseURL: '' });
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/task-view-4.json', { baseURL: '' });
       
       // Verify data normalization
       expect(result.id).toBe(4);
@@ -263,6 +263,28 @@ describe('ZentaoClient', () => {
       expect(result.assignedTo).toEqual({ account: 'Ryan', realname: 'Ryan_VN_test' });
       expect(result.actions).toHaveLength(1);
       expect(result.actions[0].desc).toContain('创建');
+    });
+  });
+
+  describe('Comments', () => {
+    it('should add a comment using the classic action comment endpoint', async () => {
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { token: 'mock-token' } }) // login
+        .mockResolvedValueOnce({ data: '<html>parent.location.reload(true)</html>', status: 200 }); // addComment
+
+      const result = await client.addComment('task', 8560, 'Test comment');
+
+      expect(result).toEqual({ result: 'success', message: 'Comment added successfully' });
+      expect(mockAxiosInstance.post).toHaveBeenLastCalledWith(
+        'https://zentao.example.com/action-comment-task-8560.json?zentaosid=mock-token',
+        expect.any(URLSearchParams),
+        expect.objectContaining({
+          baseURL: '',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/x-www-form-urlencoded'
+          })
+        })
+      );
     });
   });
 });
