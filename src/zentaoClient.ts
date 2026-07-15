@@ -129,25 +129,179 @@ export class ZentaoClient {
   }
 
   /**
+   * Helper to generate standard action descriptions when they are not present in classic API.
+   */
+  private generateActionDesc(act: any, userMap: Record<string, string>): string {
+    const actorName = userMap[act.actor] || act.actor || 'User';
+    let extraName = act.extra || '';
+    if (userMap[extraName]) {
+      extraName = userMap[extraName];
+    } else {
+      const resMap: Record<string, string> = {
+        'fixed': '已解决',
+        'design': '设计如此',
+        'duplicate': '重复Bug',
+        'external': '外部原因',
+        'notrepro': '无法重现',
+        'postponed': '延期处理',
+        'willnotfix': '不予解决',
+        'tostory': '转为需求',
+      };
+      if (resMap[extraName]) {
+        extraName = resMap[extraName];
+      }
+    }
+
+    switch (act.action) {
+      case 'opened':
+        return `由 <strong>${actorName}</strong> 创建。`;
+      case 'assigned':
+        return `由 <strong>${actorName}</strong> 指派给 <strong>${extraName}</strong>。`;
+      case 'started':
+        if (act.extra === 'autobychild') {
+          return `由 <strong>${actorName}</strong> 启动子任务，该任务自动启动。`;
+        }
+        return `由 <strong>${actorName}</strong> 启动。`;
+      case 'finished':
+        return `由 <strong>${actorName}</strong> 完成。`;
+      case 'resolved':
+        return `由 <strong>${actorName}</strong> 解决，方案为 <strong>${extraName}</strong>。`;
+      case 'closed':
+        return `由 <strong>${actorName}</strong> 关闭。`;
+      case 'edited':
+        return `由 <strong>${actorName}</strong> 编辑。`;
+      case 'bugconfirmed':
+      case 'confirmed':
+        return `由 <strong>${actorName}</strong> 确认Bug。`;
+      case 'activated':
+        return `由 <strong>${actorName}</strong> 激活。`;
+      case 'commented':
+        return `由 <strong>${actorName}</strong> 备注。`;
+      case 'createchildren':
+        return `由 <strong>${actorName}</strong> 创建子任务 ${act.extra || ''}。`;
+      default:
+        if (act.action && act.action.startsWith('subtask')) {
+          return `由 <strong>${actorName}</strong> ${act.action}。`;
+        }
+        return `由 <strong>${actorName}</strong> 执行了 <strong>${act.action || '未知'}</strong> 操作。`;
+    }
+  }
+
+  /**
+   * Fetches classic JSON API fallback data when REST API returns empty/errors.
+   */
+  private async getFallbackClassicData(type: 'bug' | 'task', id: string | number): Promise<any> {
+    const webBaseUrl = this.baseUrl.split('/api.php/v1')[0];
+    const url = `${webBaseUrl}/${type}-view-${id}.json`;
+    
+    const res = await this.client.get(url, {
+      baseURL: '', // override baseURL
+    });
+
+    const responseData = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+    if (responseData && responseData.status === 'success') {
+      const detailData = typeof responseData.data === 'string' ? JSON.parse(responseData.data) : responseData.data;
+      if (detailData) {
+        const entity = detailData[type];
+        if (entity) {
+          const userMap = detailData.users || {};
+          
+          // Normalize user fields
+          const userFields = ['openedBy', 'assignedTo', 'resolvedBy', 'closedBy', 'finishedBy', 'canceledBy', 'lastEditedBy'];
+          for (const field of userFields) {
+            const val = entity[field];
+            if (val && typeof val === 'string') {
+              entity[field] = {
+                account: val,
+                realname: userMap[val] || val
+              };
+            }
+          }
+
+          if (entity.assignedTo?.account === 'closed') {
+            entity.assignedTo = null;
+          }
+
+          // Normalize actions list to sorted array
+          let actionsArray: any[] = [];
+          if (detailData.actions) {
+            if (Array.isArray(detailData.actions)) {
+              actionsArray = detailData.actions;
+            } else if (typeof detailData.actions === 'object') {
+              actionsArray = Object.values(detailData.actions);
+              actionsArray.sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+            }
+          }
+
+          // Generate descriptions if missing
+          for (const act of actionsArray) {
+            if (!act.desc) {
+              act.desc = `${act.date || ''}, ` + this.generateActionDesc(act, userMap);
+            }
+          }
+          
+          entity.actions = actionsArray;
+          return entity;
+        }
+      }
+    }
+    throw new Error(`Failed to fetch ${type} details from classic fallback API for ID ${id}`);
+  }
+
+  /**
    * Retrieves details of a specific task.
    * Checks the cache first, otherwise fetches from API.
+   * Falls back to classic JSON API if REST API returns empty/invalid response.
    * 
    * @param taskId The ID of the task.
    * @returns Resolves with the task details.
    */
   public async getTaskDetails(taskId: string | number) {
-    return this.get<any>(`/tasks/${taskId}`);
+    try {
+      const task = await this.get<any>(`/tasks/${taskId}`);
+      if (!task || task === "") {
+        const fallbackTask = await this.getFallbackClassicData('task', taskId);
+        this.getCache.set(`/tasks/${taskId}`, { data: fallbackTask, timestamp: Date.now() });
+        return fallbackTask;
+      }
+      return task;
+    } catch (error) {
+      try {
+        const fallbackTask = await this.getFallbackClassicData('task', taskId);
+        this.getCache.set(`/tasks/${taskId}`, { data: fallbackTask, timestamp: Date.now() });
+        return fallbackTask;
+      } catch (fallbackError) {
+        throw error; // throw original error if fallback also fails
+      }
+    }
   }
 
   /**
    * Retrieves details of a specific bug.
    * Checks the cache first, otherwise fetches from API.
+   * Falls back to classic JSON API if REST API returns empty/invalid response.
    * 
    * @param bugId The ID of the bug.
    * @returns Resolves with the bug details.
    */
   public async getBugDetails(bugId: string | number) {
-    return this.get<any>(`/bugs/${bugId}`);
+    try {
+      const bug = await this.get<any>(`/bugs/${bugId}`);
+      if (!bug || bug === "") {
+        const fallbackBug = await this.getFallbackClassicData('bug', bugId);
+        this.getCache.set(`/bugs/${bugId}`, { data: fallbackBug, timestamp: Date.now() });
+        return fallbackBug;
+      }
+      return bug;
+    } catch (error) {
+      try {
+        const fallbackBug = await this.getFallbackClassicData('bug', bugId);
+        this.getCache.set(`/bugs/${bugId}`, { data: fallbackBug, timestamp: Date.now() });
+        return fallbackBug;
+      } catch (fallbackError) {
+        throw error; // throw original error if fallback also fails
+      }
+    }
   }
 
   /**
