@@ -7,6 +7,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square&logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2?style=flat-square)](https://modelcontextprotocol.io)
+[![Tests](https://img.shields.io/badge/tests-26%20passed-brightgreen?style=flat-square&logo=jest)](https://github.com/dyno-nexsoft/zentao_mcp/tree/master/tests)
 
 A **Model Context Protocol (MCP)** server for integrating AI assistants (Claude, Cursor, etc.) with the [ZenTao](https://www.zentao.net) project management API.  
 Fetch task details, bug reports, and attachments — all directly inside your AI chat.
@@ -21,6 +22,7 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | `zentao_get_bug_details` | Fetch full details of a bug by ID (severity, repro steps, history & comments, inline images, attachments) |
 | `zentao_download_attachment` | Download any ZenTao file attachment to local disk |
 | `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug |
+| `zentao_add_comment` | Add a comment/remark to a task or bug |
 | `zentao_update_task_status` | Update task status (start, finish, close, pause, cancel, restart) and add optional comments/hours |
 | `zentao_update_bug_status` | Update bug status (resolve, close, activate) and add optional comments/resolutions |
 
@@ -28,9 +30,11 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 **Under the hood:**
 - 🔐 Auto login & token refresh — no manual auth needed
 - 📦 In-memory cache (2 min TTL) + in-flight request dedup — avoids redundant API calls
+- 🔁 Classic JSON API fallback — seamlessly retries via the web API when the REST endpoint returns empty or errors
 - 🖼️ Inline HTML images are automatically downloaded and served as local `file://` links
 - 📎 Attachments are downloaded and embedded as clickable local links
 - 🛡️ Corrupt partial downloads are auto-cleaned on error
+- ⚡ Non-blocking async image I/O — base64 encoding uses `fs.promises` + `Promise.all`
 
 ---
 
@@ -130,6 +134,15 @@ Get only the history and comments timeline of a task or bug.
 | `type` | `"task" \| "bug"` | ✅ | Type of the object |
 | `id` | `string \| number` | ✅ | Task or Bug ID |
 
+### `zentao_add_comment`
+Add a comment/remark to a task or bug.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"task" \| "bug"` | ✅ | Type of the object |
+| `id` | `string \| number` | ✅ | Task or Bug ID |
+| `comment` | `string` | ✅ | Comment content |
+
 ### `zentao_update_task_status`
 Update a task's status with optional comments, actual start/finish dates, and consumed hours.
 
@@ -174,24 +187,31 @@ npm run test:api   # Live API integration test
 ```
 src/
 ├── index.ts                  # MCP server entry point
-├── zentaoClient.ts           # Axios client: auth, cache, dedup, status updates
+├── zentaoClient.ts           # Axios client: auth, cache, dedup, fallback, stream helpers
 ├── tools.ts                  # Thin orchestrator + backward-compat exports
 ├── utils/
 │   ├── fileUtils.ts          # toFileUrl · getMimeType · formatSize
 │   ├── markdownUtils.ts      # htmlToMarkdown · parseFiles · formatUser
-│   └── mcpResponse.ts        # mcpText · buildMcpResponse
+│   └── mcpResponse.ts        # mcpText · buildMcpResponse (async)
 ├── formatters/
-│   ├── imageLocalizer.ts     # Inline <img> → local file:// link
+│   ├── imageLocalizer.ts     # Inline <img> → local file:// link (deduped, concurrent)
 │   ├── attachmentRenderer.ts # Attachments → Markdown ## Files section
 │   ├── actionFormatter.ts    # renderHistoryAndComments
 │   ├── taskFormatter.ts      # taskToMarkdown (includes comments)
 │   └── bugFormatter.ts       # bugToMarkdown (includes comments)
 └── tools/
-    ├── taskTool.ts           # zentao_get_task_details registration
-    ├── bugTool.ts            # zentao_get_bug_details registration
-    ├── downloadTool.ts       # zentao_download_attachment registration
-    ├── commentTool.ts        # zentao_get_comments registration
-    └── statusTool.ts         # status update tools registration
+    ├── taskTool.ts           # zentao_get_task_details
+    ├── bugTool.ts            # zentao_get_bug_details
+    ├── downloadTool.ts       # zentao_download_attachment
+    ├── commentTool.ts        # zentao_get_comments · zentao_add_comment
+    └── statusTool.ts         # zentao_update_task_status · zentao_update_bug_status
+```
+
+### Running tests
+
+```bash
+npm test           # Unit tests — 26 tests across ZentaoClient + formatters
+npm run test:api   # Live API integration test (requires .env)
 ```
 
 ---
