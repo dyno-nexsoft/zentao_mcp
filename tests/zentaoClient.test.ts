@@ -180,5 +180,89 @@ describe('ZentaoClient', () => {
       expect(res2).toEqual(mockBugData);
       expect(mockAxiosInstance.get).toHaveBeenCalledTimes(1);
     });
+
+    it('should fallback to classic JSON API for bug details when REST API returns empty string', async () => {
+      // First call to REST API `/bugs/3` returns empty string ""
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: "" });
+      
+      // Second call to classic JSON API `/bug-view-3.json` returns success response
+      const mockClassicResponse = {
+        status: 'success',
+        data: JSON.stringify({
+          bug: {
+            id: 3,
+            title: 'Mocked Fallback Bug',
+            openedBy: 'Ryan',
+            assignedTo: 'closed',
+            resolvedBy: '',
+            closedBy: ''
+          },
+          users: {
+            'Ryan': 'Ryan_VN_test',
+            'closed': 'Closed'
+          },
+          actions: {
+            '1001': { id: 1001, actor: 'Ryan', action: 'opened', date: '2026-06-02 18:15:06', extra: '' }
+          }
+        })
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockClassicResponse });
+
+      const result = await client.getBugDetails(3);
+      
+      // Verify REST API and Classic API were called
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/bugs/3');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/api/v1/bug-view-3.json', { baseURL: '' });
+      
+      // Verify data normalization
+      expect(result.id).toBe(3);
+      expect(result.title).toBe('Mocked Fallback Bug');
+      expect(result.openedBy).toEqual({ account: 'Ryan', realname: 'Ryan_VN_test' });
+      expect(result.assignedTo).toBeNull();
+      expect(result.actions).toHaveLength(1);
+      expect(result.actions[0].desc).toContain('创建');
+    });
+
+    it('should fallback to classic JSON API for task details when REST API throws error', async () => {
+      // First call to REST API `/tasks/4` throws error
+      mockAxiosInstance.get.mockRejectedValueOnce(new Error('REST API Failed'));
+      
+      // Second call to classic JSON API `/task-view-4.json` returns success response
+      const mockClassicResponse = {
+        status: 'success',
+        data: JSON.stringify({
+          task: {
+            id: 4,
+            name: 'Mocked Fallback Task',
+            openedBy: 'Dyno',
+            assignedTo: 'Ryan',
+            resolvedBy: '',
+            closedBy: ''
+          },
+          users: {
+            'Dyno': 'Dyno-VN-Flutter',
+            'Ryan': 'Ryan_VN_test'
+          },
+          actions: [
+            { id: 2001, actor: 'Dyno', action: 'opened', date: '2026-06-02 18:15:06', extra: '' }
+          ]
+        })
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockClassicResponse });
+
+      const result = await client.getTaskDetails(4);
+      
+      // Verify REST API and Classic API were called
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tasks/4');
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('https://zentao.example.com/api/v1/task-view-4.json', { baseURL: '' });
+      
+      // Verify data normalization
+      expect(result.id).toBe(4);
+      expect(result.name).toBe('Mocked Fallback Task');
+      expect(result.openedBy).toEqual({ account: 'Dyno', realname: 'Dyno-VN-Flutter' });
+      expect(result.assignedTo).toEqual({ account: 'Ryan', realname: 'Ryan_VN_test' });
+      expect(result.actions).toHaveLength(1);
+      expect(result.actions[0].desc).toContain('创建');
+    });
   });
 });
