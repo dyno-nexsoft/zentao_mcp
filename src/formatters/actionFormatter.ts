@@ -60,7 +60,7 @@ export async function renderHistoryAndComments(
 
     // 3. Format files if present in action
     let filesStr = "";
-    if (act.files && Array.isArray(act.files) && act.files.length > 0) {
+    if (act.files) {
       const parsedFiles = parseFiles(act.files);
       if (parsedFiles.length > 0) {
         const fileLinks: string[] = [];
