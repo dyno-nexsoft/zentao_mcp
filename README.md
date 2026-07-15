@@ -17,9 +17,13 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 
 | Tool | Description |
 |---|---|
-| `zentao_get_task_details` | Fetch full details of a task by ID (status, assignee, description, attachments) |
-| `zentao_get_bug_details` | Fetch full details of a bug by ID (severity, repro steps, inline images, attachments) |
+| `zentao_get_task_details` | Fetch full details of a task by ID (status, assignee, description, history & comments, attachments) |
+| `zentao_get_bug_details` | Fetch full details of a bug by ID (severity, repro steps, history & comments, inline images, attachments) |
 | `zentao_download_attachment` | Download any ZenTao file attachment to local disk |
+| `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug |
+| `zentao_update_task_status` | Update task status (start, finish, close, pause, cancel, restart) and add optional comments/hours |
+| `zentao_update_bug_status` | Update bug status (resolve, close, activate) and add optional comments/resolutions |
+
 
 **Under the hood:**
 - 🔐 Auto login & token refresh — no manual auth needed
@@ -118,6 +122,42 @@ Download a ZenTao file attachment to local disk.
 | `fileId` | `string \| number` | ✅ | File ID to download |
 | `extension` | `string` | ❌ | File extension hint (e.g. `mp4`, `png`) |
 
+### `zentao_get_comments`
+Get only the history and comments timeline of a task or bug.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `type` | `"task" \| "bug"` | ✅ | Type of the object |
+| `id` | `string \| number` | ✅ | Task or Bug ID |
+
+### `zentao_update_task_status`
+Update a task's status with optional comments, actual start/finish dates, and consumed hours.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `taskId` | `string \| number` | ✅ | Task ID |
+| `action` | `"start" \| "finish" \| "close" \| "pause" \| "cancel" \| "restart"` | ✅ | Status transition action |
+| `comment` | `string` | ❌ | Optional comment to attach |
+| `consumed` | `number` | ❌ | Optional hours consumed |
+| `finishedDate` | `string` | ❌ | Optional actual finish date (YYYY-MM-DD) |
+| `realStarted` | `string` | ❌ | Optional actual start date (YYYY-MM-DD) |
+| `assignedTo` | `string` | ❌ | Optional user account to assign to next |
+| `left` | `number` | ❌ | Optional left hours (for `restart`) |
+
+### `zentao_update_bug_status`
+Update a bug's status with optional comments and resolutions.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `bugId` | `string \| number` | ✅ | Bug ID |
+| `action` | `"resolve" \| "close" \| "activate"` | ✅ | Status transition action |
+| `comment` | `string` | ❌ | Optional comment to attach |
+| `resolution` | `"fixed" \| "bydesign" \| "postponed" \| "external" \| "notrepro" \| "willnotfix"` | ❌ | Optional resolution type |
+| `resolvedBuild` | `string` | ❌ | Optional build ID where bug was resolved |
+| `resolvedDate` | `string` | ❌ | Optional resolution date (YYYY-MM-DD) |
+| `assignedTo` | `string` | ❌ | Optional user account to assign to next |
+| `openedBuild` | `string` | ❌ | Optional build ID where bug was found (for `activate`) |
+
 ---
 
 ## 🧑‍💻 Development
@@ -134,7 +174,7 @@ npm run test:api   # Live API integration test
 ```
 src/
 ├── index.ts                  # MCP server entry point
-├── zentaoClient.ts           # Axios client: auth, cache, dedup
+├── zentaoClient.ts           # Axios client: auth, cache, dedup, status updates
 ├── tools.ts                  # Thin orchestrator + backward-compat exports
 ├── utils/
 │   ├── fileUtils.ts          # toFileUrl · getMimeType · formatSize
@@ -143,12 +183,15 @@ src/
 ├── formatters/
 │   ├── imageLocalizer.ts     # Inline <img> → local file:// link
 │   ├── attachmentRenderer.ts # Attachments → Markdown ## Files section
-│   ├── taskFormatter.ts      # taskToMarkdown
-│   └── bugFormatter.ts       # bugToMarkdown
+│   ├── actionFormatter.ts    # renderHistoryAndComments
+│   ├── taskFormatter.ts      # taskToMarkdown (includes comments)
+│   └── bugFormatter.ts       # bugToMarkdown (includes comments)
 └── tools/
     ├── taskTool.ts           # zentao_get_task_details registration
     ├── bugTool.ts            # zentao_get_bug_details registration
-    └── downloadTool.ts       # zentao_download_attachment registration
+    ├── downloadTool.ts       # zentao_download_attachment registration
+    ├── commentTool.ts        # zentao_get_comments registration
+    └── statusTool.ts         # status update tools registration
 ```
 
 ---
