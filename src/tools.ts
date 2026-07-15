@@ -22,6 +22,8 @@ import {
 import { registerTaskTool }     from "./tools/taskTool.js";
 import { registerBugTool }      from "./tools/bugTool.js";
 import { registerDownloadTool } from "./tools/downloadTool.js";
+import { registerCommentTool }  from "./tools/commentTool.js";
+import { registerStatusTools }  from "./tools/statusTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -56,6 +58,9 @@ export function bugToMarkdown(
  * - `zentao_get_task_details`     — Fetch full details of a task by ID.
  * - `zentao_get_bug_details`      — Fetch full details of a bug by ID.
  * - `zentao_download_attachment`  — Download an attachment and save locally.
+ * - `zentao_get_comments`         — Fetch history and comments timeline for task/bug.
+ * - `zentao_update_task_status`   — Update a task's status with comments.
+ * - `zentao_update_bug_status`    — Update a bug's status with comments.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */
@@ -63,4 +68,6 @@ export function registerTools(server: McpServer): void {
   registerTaskTool(server, client);
   registerBugTool(server, client);
   registerDownloadTool(server, client);
+  registerCommentTool(server, client);
+  registerStatusTools(server, client);
 }

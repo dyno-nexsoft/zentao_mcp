@@ -1,6 +1,7 @@
 import { ZentaoClient } from '../src/zentaoClient.js';
 import * as dotenv from 'dotenv';
 import { taskToMarkdown, bugToMarkdown } from '../src/tools.js';
+import { renderHistoryAndComments } from '../src/formatters/actionFormatter.js';
 
 dotenv.config();
 
@@ -37,6 +38,26 @@ async function main() {
       console.log(await bugToMarkdown(bug));
     } catch (e: any) {
       console.error('Error fetching bug:', e.response?.data || e.message);
+    }
+
+    console.log('\n--- Fetching task comments only (Task ID: 3826) ---');
+    try {
+      const task = await client.getTaskDetails(3826);
+      const comments = await renderHistoryAndComments(task.actions, client);
+      console.log('\nFormatted Task Comments Markdown:');
+      console.log(comments.trim() || '*No comments found.*');
+    } catch (e: any) {
+      console.error('Error fetching task comments:', e.response?.data || e.message);
+    }
+
+    console.log('\n--- Fetching bug comments only (Bug ID: 3722) ---');
+    try {
+      const bug = await client.getBugDetails(3722);
+      const comments = await renderHistoryAndComments(bug.actions, client);
+      console.log('\nFormatted Bug Comments Markdown:');
+      console.log(comments.trim() || '*No comments found.*');
+    } catch (e: any) {
+      console.error('Error fetching bug comments:', e.response?.data || e.message);
     }
   } catch (error: any) {
     console.error('Fatal Error:', error.message || error);

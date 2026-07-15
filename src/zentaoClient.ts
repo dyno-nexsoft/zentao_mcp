@@ -209,4 +209,40 @@ export class ZentaoClient {
       });
     });
   }
+
+  /**
+   * Helper method to perform POST requests.
+   * Clears the cache to ensure subsequent GET requests fetch the updated state.
+   * 
+   * @param url The API endpoint path.
+   * @param data The payload data.
+   * @returns The response data.
+   */
+  public async post<T>(url: string, data?: any): Promise<T> {
+    this.clearCache();
+    const res = await this.client.post<T>(url, data);
+    return res.data;
+  }
+
+  /**
+   * Updates task status by calling the action endpoint.
+   * 
+   * @param taskId The ID of the task.
+   * @param action The status transition action (e.g. 'start', 'finish', 'close', 'pause', 'cancel').
+   * @param payload The request body payload.
+   */
+  public async updateTaskStatus(taskId: string | number, action: string, payload: any) {
+    return this.post<any>(`/tasks/${taskId}/${action}`, payload);
+  }
+
+  /**
+   * Updates bug status by calling the action endpoint.
+   * 
+   * @param bugId The ID of the bug.
+   * @param action The status transition action (e.g. 'resolve', 'close', 'activate').
+   * @param payload The request body payload.
+   */
+  public async updateBugStatus(bugId: string | number, action: string, payload: any) {
+    return this.post<any>(`/bugs/${bugId}/${action}`, payload);
+  }
 }
