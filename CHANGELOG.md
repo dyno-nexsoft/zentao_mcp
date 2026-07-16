@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-07-16
+
+### Changed
+- **Tools merged**: Merged `zentao_get_task_details` and `zentao_get_bug_details` into a single `zentao_get_details` tool to save MCP context token usage.
+- **Tools removed**: Removed `zentao_download_attachment` as attachments are already proactively downloaded and cached during detail queries.
+
+---
+
 ## [1.5.0] - 2026-07-15
 
 ### Refactored

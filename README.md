@@ -18,9 +18,7 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 
 | Tool | Description |
 |---|---|
-| `zentao_get_task_details` | Fetch full details of a task by ID (status, assignee, description, history & comments, attachments) |
-| `zentao_get_bug_details` | Fetch full details of a bug by ID (severity, repro steps, history & comments, inline images, attachments) |
-| `zentao_download_attachment` | Download any ZenTao file attachment to local disk |
+| `zentao_get_details` | Fetch full details of a task or bug by ID |
 | `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug |
 | `zentao_add_comment` | Add a comment/remark to a task or bug |
 | `zentao_update_task_status` | Update task status (start, finish, close, pause, cancel, restart) and add optional comments/hours |
@@ -105,27 +103,13 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
 
 ## 🛠️ Available Tools
 
-### `zentao_get_task_details`
-Get full details of a ZenTao task.
+### `zentao_get_details`
+Get full details of a ZenTao task or bug, including repro steps (for bugs), inline images, attachments, history, and comments.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `taskId` | `string \| number` | ✅ | Task ID |
-
-### `zentao_get_bug_details`
-Get full details of a ZenTao bug, including repro steps and inline images.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `bugId` | `string \| number` | ✅ | Bug ID |
-
-### `zentao_download_attachment`
-Download a ZenTao file attachment to local disk.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `fileId` | `string \| number` | ✅ | File ID to download |
-| `extension` | `string` | ❌ | File extension hint (e.g. `mp4`, `png`) |
+| `type` | `"task" \| "bug"` | ✅ | Type of the object |
+| `id` | `string \| number` | ✅ | Task or Bug ID |
 
 ### `zentao_get_comments`
 Get only the history and comments timeline of a task or bug.
@@ -205,9 +189,7 @@ src/
 │   ├── bugFormatter.ts       # bugToMarkdown (includes comments)
 │   └── myWorkFormatter.ts    # myWorkToMarkdown (includes comments)
 └── tools/
-    ├── taskTool.ts           # zentao_get_task_details
-    ├── bugTool.ts            # zentao_get_bug_details
-    ├── downloadTool.ts       # zentao_download_attachment
+    ├── detailTool.ts         # zentao_get_details
     ├── commentTool.ts        # zentao_get_comments · zentao_add_comment
     ├── statusTool.ts         # zentao_update_task_status · zentao_update_bug_status
     └── myWorkTool.ts         # zentao_get_assigned_to_me
