@@ -266,6 +266,25 @@ describe('ZentaoClient', () => {
     });
   });
 
+  describe('My Work', () => {
+    it('should fetch tasks and bugs assigned to me', async () => {
+      const mockWorkData = {
+        profile: { account: 'test_user', realname: 'Test User' },
+        task: { total: 1, tasks: [{ id: 1, name: 'Task 1' }] },
+        bug: { total: 0, bugs: [] }
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockWorkData });
+
+      const res = await client.getMyWork();
+      expect(res).toEqual(mockWorkData);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/user?fields=task,bug&type=assignedTo');
+    });
+
+    it('should expose the correct webUrl', () => {
+      expect(client.webUrl).toBe('https://zentao.example.com');
+    });
+  });
+
   describe('Comments', () => {
     it('should add a comment using the classic action comment endpoint', async () => {
       mockAxiosInstance.post

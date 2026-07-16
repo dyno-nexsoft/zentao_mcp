@@ -60,6 +60,13 @@ export class ZentaoClient {
     return this.baseUrl.split('/api/v1')[0];
   }
 
+  /**
+   * Public getter exposing the web base URL.
+   */
+  public get webUrl(): string {
+    return this.webBaseUrl;
+  }
+
   // ─── Cache helpers ────────────────────────────────────────────────────────────
 
   /**
@@ -337,6 +344,15 @@ export class ZentaoClient {
   }
 
   // ─── Public API ───────────────────────────────────────────────────────────────
+
+  /**
+   * Retrieves tasks and bugs assigned to the current user (my work).
+   * 
+   * @returns Resolves with the user's work items (tasks and bugs).
+   */
+  public async getMyWork(): Promise<any> {
+    return this.get<any>('/user?fields=task,bug&type=assignedTo');
+  }
 
   /**
    * Retrieves details of a specific task.

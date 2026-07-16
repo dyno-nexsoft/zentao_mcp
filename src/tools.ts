@@ -24,6 +24,7 @@ import { registerBugTool }      from "./tools/bugTool.js";
 import { registerDownloadTool } from "./tools/downloadTool.js";
 import { registerCommentTool }  from "./tools/commentTool.js";
 import { registerStatusTools }  from "./tools/statusTool.js";
+import { registerMyWorkTool }   from "./tools/myWorkTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -70,4 +71,5 @@ export function registerTools(server: McpServer): void {
   registerDownloadTool(server, client);
   registerCommentTool(server, client);
   registerStatusTools(server, client);
+  registerMyWorkTool(server, client);
 }

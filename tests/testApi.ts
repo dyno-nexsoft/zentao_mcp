@@ -2,6 +2,7 @@ import { ZentaoClient } from '../src/zentaoClient.js';
 import * as dotenv from 'dotenv';
 import { taskToMarkdown, bugToMarkdown } from '../src/tools.js';
 import { renderHistoryAndComments } from '../src/formatters/actionFormatter.js';
+import { myWorkToMarkdown } from '../src/formatters/myWorkFormatter.js';
 
 dotenv.config();
 
@@ -12,6 +13,15 @@ async function main() {
     console.log('Logging in to Zentao...');
     await client.login();
     console.log('Successfully logged in.');
+
+    console.log('\n--- Fetching my work items (Assigned to Me) ---');
+    try {
+      const myWork = await client.getMyWork();
+      console.log('\nFormatted My Work Markdown:');
+      console.log(myWorkToMarkdown(myWork, client));
+    } catch (e: any) {
+      console.error('Error fetching my work:', e.response?.data || e.message);
+    }
 
     console.log('\n--- Fetching task details (Task ID: 3826) ---');
     try {
