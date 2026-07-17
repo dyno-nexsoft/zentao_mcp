@@ -56,4 +56,35 @@ export function registerCommentTool(server: McpServer, client: ZentaoClient): vo
       return mcpText(result.message);
     }
   );
+
+  server.registerTool(
+    "zentao_edit_comment",
+    {
+      description:
+        "Edit an existing comment by its action ID. Use zentao_get_comments to find the comment id.",
+      inputSchema: {
+        actionId: z.union([z.string(), z.number()]).describe("Action ID of the comment to edit (shown as 'comment id' by zentao_get_comments)"),
+        comment: z.string().describe("New comment content"),
+      },
+    },
+    async ({ actionId, comment }) => {
+      const result = await client.editComment(actionId, comment);
+      return mcpText(result.message);
+    }
+  );
+
+  server.registerTool(
+    "zentao_delete_comment",
+    {
+      description:
+        "Delete a comment by its action ID (soft-hides it from the timeline; restorable from the ZenTao trash). Use zentao_get_comments to find the comment id.",
+      inputSchema: {
+        actionId: z.union([z.string(), z.number()]).describe("Action ID of the comment to delete (shown as 'comment id' by zentao_get_comments)"),
+      },
+    },
+    async ({ actionId }) => {
+      const result = await client.deleteComment(actionId);
+      return mcpText(result.message);
+    }
+  );
 }

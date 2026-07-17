@@ -347,11 +347,29 @@ export class ZentaoClient {
 
   /**
    * Retrieves tasks and bugs assigned to the current user (my work).
-   * 
+   *
    * @returns Resolves with the user's work items (tasks and bugs).
    */
   public async getMyWork(): Promise<any> {
     return this.get<any>('/user?fields=task,bug&type=assignedTo');
+  }
+
+  /**
+   * Retrieves only the tasks assigned to the current user.
+   *
+   * @returns Resolves with the user's assigned tasks.
+   */
+  public async getMyTasks(): Promise<any> {
+    return this.get<any>('/user?fields=task&type=assignedTo');
+  }
+
+  /**
+   * Retrieves only the bugs assigned to the current user.
+   *
+   * @returns Resolves with the user's assigned bugs.
+   */
+  public async getMyBugs(): Promise<any> {
+    return this.get<any>('/user?fields=bug&type=assignedTo');
   }
 
   /**
@@ -423,6 +441,42 @@ export class ZentaoClient {
   }
 
   /**
+   * Helper method to perform PUT requests.
+   * Clears the cache to ensure subsequent GET requests fetch the updated state.
+   *
+   * @param url The API endpoint path.
+   * @param data The payload data.
+   * @returns The response data.
+   */
+  public async put<T>(url: string, data?: any): Promise<T> {
+    this.clearCache();
+    const res = await this.client.put<T>(url, data);
+    return res.data;
+  }
+
+  /**
+   * Creates a new task under the given execution.
+   *
+   * @param executionId The ID of the execution the task belongs to.
+   * @param payload The task fields (e.g. name, type, assignedTo, estimate, pri, desc).
+   * @returns The created task object returned by the API.
+   */
+  public async createTask(executionId: string | number, payload: any) {
+    return this.post<any>(`/executions/${executionId}/tasks`, payload);
+  }
+
+  /**
+   * Updates (edits) an existing task's fields.
+   *
+   * @param taskId The ID of the task to edit.
+   * @param payload The task fields to change (only provided fields are sent).
+   * @returns The updated task object returned by the API.
+   */
+  public async updateTask(taskId: string | number, payload: any) {
+    return this.put<any>(`/tasks/${taskId}`, payload);
+  }
+
+  /**
    * Updates task status by calling the action endpoint.
    * 
    * @param taskId The ID of the task.
@@ -445,24 +499,28 @@ export class ZentaoClient {
   }
 
   /**
-   * Adds a comment to a task or a bug using the classic action comment endpoint.
-   * 
-   * @param type The object type ('task' or 'bug').
-   * @param id The ID of the object.
-   * @param comment The text of the comment to add.
+   * Posts to a classic (non-REST) ZenTao action endpoint and normalizes the
+   * result. Shared by `addComment`, `editComment`, and `deleteComment`, which
+   * all rely on the legacy web action module rather than the REST API.
+   *
+   * @param actionPath     The action path without extension (e.g. `action-comment-task-123`).
+   * @param params         The form-encoded body to send.
+   * @param successMessage Message returned on success.
+   * @throws {Error} If the response does not indicate success.
    */
-  public async addComment(type: 'task' | 'bug', id: string | number, comment: string): Promise<any> {
+  private async postClassicAction(
+    actionPath: string,
+    params: URLSearchParams,
+    successMessage: string
+  ): Promise<{ result: 'success'; message: string }> {
     if (!this.token) {
       await this.login();
     }
 
-    const url = `${this.webBaseUrl}/action-comment-${type}-${id}.json?zentaosid=${this.token}`;
-    
-    // Clear the cache so subsequent fetches get the new comment
-    this.clearCache();
+    const url = `${this.webBaseUrl}/${actionPath}.json?zentaosid=${this.token}`;
 
-    const params = new URLSearchParams();
-    params.append('comment', comment);
+    // Clear the cache so subsequent fetches reflect the mutation.
+    this.clearCache();
 
     const res = await this.client.post(url, params, {
       baseURL: '', // override baseURL
@@ -472,14 +530,52 @@ export class ZentaoClient {
     });
 
     if (res.status === 200 && typeof res.data === 'string' && res.data.includes('reload')) {
-      return { result: 'success', message: 'Comment added successfully' };
-    }
-    
-    const responseData = typeof res.data === 'string' && res.data.startsWith('{') ? JSON.parse(res.data) : res.data;
-    if (responseData && (responseData.status === 'success' || responseData.result === 'success')) {
-      return { result: 'success', message: 'Comment added successfully' };
+      return { result: 'success', message: successMessage };
     }
 
-    throw new Error(`Failed to add comment to ${type} #${id}. Response: ${typeof res.data === 'string' ? res.data.substring(0, 200) : JSON.stringify(res.data)}`);
+    const responseData = typeof res.data === 'string' && res.data.startsWith('{') ? JSON.parse(res.data) : res.data;
+    if (responseData && (responseData.status === 'success' || responseData.result === 'success')) {
+      return { result: 'success', message: successMessage };
+    }
+
+    throw new Error(`Classic action '${actionPath}' failed. Response: ${typeof res.data === 'string' ? res.data.substring(0, 200) : JSON.stringify(res.data)}`);
+  }
+
+  /**
+   * Adds a comment to a task or a bug using the classic action comment endpoint.
+   *
+   * @param type The object type ('task' or 'bug').
+   * @param id The ID of the object.
+   * @param comment The text of the comment to add.
+   */
+  public async addComment(type: 'task' | 'bug', id: string | number, comment: string): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('comment', comment);
+    return this.postClassicAction(`action-comment-${type}-${id}`, params, 'Comment added successfully');
+  }
+
+  /**
+   * Edits an existing comment (action record) by its action ID.
+   * ZenTao's classic `editComment` endpoint expects the new text under the
+   * `lastComment` field.
+   *
+   * @param actionId The action ID of the comment to edit (see `zentao_get_comments`).
+   * @param comment  The new comment text.
+   */
+  public async editComment(actionId: string | number, comment: string): Promise<any> {
+    const params = new URLSearchParams();
+    params.append('lastComment', comment);
+    return this.postClassicAction(`action-editComment-${actionId}`, params, 'Comment updated successfully');
+  }
+
+  /**
+   * Deletes a comment (action record) by hiding it from the timeline.
+   * ZenTao has no hard-delete for comments; `hideOne` performs a soft delete
+   * that can be restored from the trash by an admin.
+   *
+   * @param actionId The action ID of the comment to delete (see `zentao_get_comments`).
+   */
+  public async deleteComment(actionId: string | number): Promise<any> {
+    return this.postClassicAction(`action-hideOne-${actionId}`, new URLSearchParams(), 'Comment deleted (hidden) successfully');
   }
 }

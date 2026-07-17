@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 const mockAxiosInstance = {
   get: jest.fn<any>(),
   post: jest.fn<any>(),
+  put: jest.fn<any>(),
   interceptors: {
     request: {
       use: jest.fn<any>()
@@ -280,8 +281,55 @@ describe('ZentaoClient', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/user?fields=task,bug&type=assignedTo');
     });
 
+    it('should fetch only tasks assigned to me', async () => {
+      const mockData = {
+        profile: { account: 'test_user' },
+        task: { total: 1, tasks: [{ id: 1, name: 'Task 1' }] }
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockData });
+
+      const res = await client.getMyTasks();
+      expect(res).toEqual(mockData);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/user?fields=task&type=assignedTo');
+    });
+
+    it('should fetch only bugs assigned to me', async () => {
+      const mockData = {
+        profile: { account: 'test_user' },
+        bug: { total: 1, bugs: [{ id: 2, title: 'Bug 2' }] }
+      };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data: mockData });
+
+      const res = await client.getMyBugs();
+      expect(res).toEqual(mockData);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/user?fields=bug&type=assignedTo');
+    });
+
     it('should expose the correct webUrl', () => {
       expect(client.webUrl).toBe('https://zentao.example.com');
+    });
+  });
+
+  describe('Tasks', () => {
+    it('should create a task under an execution', async () => {
+      const created = { id: 100, name: 'New Task' };
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: created });
+
+      const payload = { name: 'New Task', type: 'devel' };
+      const res = await client.createTask(5, payload);
+
+      expect(res).toEqual(created);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/executions/5/tasks', payload);
+    });
+
+    it('should update a task via PUT and clear the cache', async () => {
+      const updated = { id: 100, name: 'Renamed Task' };
+      mockAxiosInstance.put.mockResolvedValueOnce({ data: updated });
+
+      const res = await client.updateTask(100, { name: 'Renamed Task' });
+
+      expect(res).toEqual(updated);
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/tasks/100', { name: 'Renamed Task' });
     });
   });
 
@@ -303,6 +351,45 @@ describe('ZentaoClient', () => {
             'Content-Type': 'application/x-www-form-urlencoded'
           })
         })
+      );
+    });
+
+    it('should edit a comment using the classic editComment endpoint', async () => {
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { token: 'mock-token' } }) // login
+        .mockResolvedValueOnce({ data: '<html>parent.location.reload(true)</html>', status: 200 }); // editComment
+
+      const result = await client.editComment(999, 'Edited comment text');
+
+      expect(result).toEqual({ result: 'success', message: 'Comment updated successfully' });
+
+      // Verify the edited text is sent under the `lastComment` field.
+      const [, sentParams] = mockAxiosInstance.post.mock.calls.at(-1) as [string, URLSearchParams, any];
+      expect(sentParams.get('lastComment')).toBe('Edited comment text');
+      expect(mockAxiosInstance.post).toHaveBeenLastCalledWith(
+        'https://zentao.example.com/action-editComment-999.json?zentaosid=mock-token',
+        expect.any(URLSearchParams),
+        expect.objectContaining({
+          baseURL: '',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/x-www-form-urlencoded'
+          })
+        })
+      );
+    });
+
+    it('should delete (hide) a comment using the classic hideOne endpoint', async () => {
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { token: 'mock-token' } }) // login
+        .mockResolvedValueOnce({ data: { result: 'success' }, status: 200 }); // hideOne
+
+      const result = await client.deleteComment(999);
+
+      expect(result).toEqual({ result: 'success', message: 'Comment deleted (hidden) successfully' });
+      expect(mockAxiosInstance.post).toHaveBeenLastCalledWith(
+        'https://zentao.example.com/action-hideOne-999.json?zentaosid=mock-token',
+        expect.any(URLSearchParams),
+        expect.objectContaining({ baseURL: '' })
       );
     });
   });

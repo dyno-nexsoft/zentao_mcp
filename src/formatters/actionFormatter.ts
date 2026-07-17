@@ -75,8 +75,11 @@ export async function renderHistoryAndComments(
       }
     }
 
-    // 4. Combine into a timeline item
-    lines.push(`- **[${act.date || "N/A"}]** ${desc}${commentStr}${filesStr}`);
+    // 4. Combine into a timeline item.
+    //    When an action carries a comment, surface its action ID so callers can
+    //    target it with `zentao_edit_comment` / `zentao_delete_comment`.
+    const idTag = act.comment && act.id ? ` *(comment id: ${act.id})*` : "";
+    lines.push(`- **[${act.date || "N/A"}]** ${desc}${idTag}${commentStr}${filesStr}`);
   }
 
   if (lines.length === 0) return "";

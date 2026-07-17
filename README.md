@@ -7,7 +7,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square&logo=node.js)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2?style=flat-square)](https://modelcontextprotocol.io)
-[![Tests](https://img.shields.io/badge/tests-13%20passed-brightgreen?style=flat-square&logo=jest)](https://github.com/dyno-nexsoft/zentao_mcp/tree/master/tests)
+[![Tests](https://img.shields.io/badge/tests-19%20passed-brightgreen?style=flat-square&logo=jest)](https://github.com/dyno-nexsoft/zentao_mcp/tree/master/tests)
 
 A **Model Context Protocol (MCP)** server for integrating AI assistants (Claude, Cursor, etc.) with the [ZenTao](https://www.zentao.net) project management API.  
 Fetch task details, bug reports, and attachments — all directly inside your AI chat.
@@ -19,11 +19,17 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | Tool | Description |
 |---|---|
 | `zentao_get_details` | Fetch full details of a task or bug by ID |
-| `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug |
+| `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug (with comment IDs) |
 | `zentao_add_comment` | Add a comment/remark to a task or bug |
+| `zentao_edit_comment` | Edit an existing comment by its action ID |
+| `zentao_delete_comment` | Delete (soft-hide) a comment by its action ID |
 | `zentao_update_task_status` | Update task status (start, finish, close, pause, cancel, restart) and add optional comments/hours |
 | `zentao_update_bug_status` | Update bug status (resolve, close, activate) and add optional comments/resolutions |
+| `zentao_create_task` | Create a new task under an execution |
+| `zentao_edit_task` | Edit an existing task's fields |
 | `zentao_get_assigned_to_me` | Get tasks and bugs currently assigned to you (configured via `ZENTAO_ACCOUNT`) |
+| `zentao_get_my_tasks` | Get only the tasks currently assigned to you |
+| `zentao_get_my_bugs` | Get only the bugs currently assigned to you |
 
 
 **Under the hood:**
@@ -128,6 +134,21 @@ Add a comment/remark to a task or bug.
 | `id` | `string \| number` | ✅ | Task or Bug ID |
 | `comment` | `string` | ✅ | Comment content |
 
+### `zentao_edit_comment`
+Edit an existing comment. Find the comment's action ID via `zentao_get_comments` (shown as `comment id`).
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `actionId` | `string \| number` | ✅ | Action ID of the comment to edit |
+| `comment` | `string` | ✅ | New comment content |
+
+### `zentao_delete_comment`
+Delete a comment. ZenTao has no hard-delete, so this soft-hides the comment from the timeline (restorable from the ZenTao trash by an admin). Find the action ID via `zentao_get_comments`.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `actionId` | `string \| number` | ✅ | Action ID of the comment to delete |
+
 ### `zentao_update_task_status`
 Update a task's status with optional comments, actual start/finish dates, and consumed hours.
 
@@ -156,8 +177,50 @@ Update a bug's status with optional comments and resolutions.
 | `assignedTo` | `string` | ❌ | Optional user account to assign to next |
 | `openedBuild` | `string` | ❌ | Optional build ID where bug was found (for `activate`) |
 
+### `zentao_create_task`
+Create a new task under an execution. Returns the created task's full details.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `executionId` | `string \| number` | ✅ | Execution ID the task belongs to |
+| `name` | `string` | ✅ | Task name |
+| `type` | `string` | ❌ | Task type (`design`, `devel`, `request`, `test`, `study`, `discuss`, `ui`, `affair`, `misc`); defaults to `devel` |
+| `assignedTo` | `string` | ❌ | User account to assign the task to |
+| `estimate` | `number` | ❌ | Estimated hours |
+| `pri` | `number` | ❌ | Priority (1=highest .. 4=lowest) |
+| `desc` | `string` | ❌ | Task description |
+| `story` | `string \| number` | ❌ | Related story ID |
+| `module` | `string \| number` | ❌ | Module ID |
+| `estStarted` | `string` | ❌ | Estimated start date (YYYY-MM-DD) |
+| `deadline` | `string` | ❌ | Deadline date (YYYY-MM-DD) |
+
+### `zentao_edit_task`
+Edit an existing task. Only the fields you provide are changed. Returns the updated task's full details.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `taskId` | `string \| number` | ✅ | Task ID to edit |
+| `name` | `string` | ❌ | New task name |
+| `type` | `string` | ❌ | Task type |
+| `assignedTo` | `string` | ❌ | User account to reassign the task to |
+| `estimate` | `number` | ❌ | Estimated hours |
+| `consumed` | `number` | ❌ | Consumed hours |
+| `left` | `number` | ❌ | Remaining hours |
+| `pri` | `number` | ❌ | Priority (1=highest .. 4=lowest) |
+| `desc` | `string` | ❌ | Task description |
+| `story` | `string \| number` | ❌ | Related story ID |
+| `module` | `string \| number` | ❌ | Module ID |
+| `estStarted` | `string` | ❌ | Estimated start date (YYYY-MM-DD) |
+| `deadline` | `string` | ❌ | Deadline date (YYYY-MM-DD) |
+
 ### `zentao_get_assigned_to_me`
 Get tasks and bugs currently assigned to the configured user account. Takes no arguments.
+
+### `zentao_get_my_tasks`
+Get only the tasks currently assigned to the configured user account. Takes no arguments.
+
+### `zentao_get_my_bugs`
+Get only the bugs currently assigned to the configured user account. Takes no arguments.
 
 ---
 
@@ -187,18 +250,19 @@ src/
 │   ├── actionFormatter.ts    # renderHistoryAndComments
 │   ├── taskFormatter.ts      # taskToMarkdown (includes comments)
 │   ├── bugFormatter.ts       # bugToMarkdown (includes comments)
-│   └── myWorkFormatter.ts    # myWorkToMarkdown (includes comments)
+│   └── myWorkFormatter.ts    # myWorkToMarkdown · myTasksToMarkdown · myBugsToMarkdown
 └── tools/
     ├── detailTool.ts         # zentao_get_details
-    ├── commentTool.ts        # zentao_get_comments · zentao_add_comment
+    ├── commentTool.ts        # zentao_get_comments · zentao_add_comment · zentao_edit_comment · zentao_delete_comment
     ├── statusTool.ts         # zentao_update_task_status · zentao_update_bug_status
-    └── myWorkTool.ts         # zentao_get_assigned_to_me
+    ├── taskTool.ts           # zentao_create_task · zentao_edit_task
+    └── myWorkTool.ts         # zentao_get_assigned_to_me · zentao_get_my_tasks · zentao_get_my_bugs
 ```
 
 ### Running tests
 
 ```bash
-npm test           # Unit tests — 13 tests across ZentaoClient
+npm test           # Unit tests — 19 tests across ZentaoClient
 npm run test:api   # Live API integration test (requires .env)
 ```
 
