@@ -2,7 +2,11 @@ import { ZentaoClient } from '../src/zentaoClient.js';
 import * as dotenv from 'dotenv';
 import { taskToMarkdown, bugToMarkdown } from '../src/tools.js';
 import { renderHistoryAndComments } from '../src/formatters/actionFormatter.js';
-import { myWorkToMarkdown } from '../src/formatters/myWorkFormatter.js';
+import {
+  myWorkToMarkdown,
+  myTasksToMarkdown,
+  myBugsToMarkdown,
+} from '../src/formatters/myWorkFormatter.js';
 
 dotenv.config();
 
@@ -21,6 +25,24 @@ async function main() {
       console.log(myWorkToMarkdown(myWork, client));
     } catch (e: any) {
       console.error('Error fetching my work:', e.response?.data || e.message);
+    }
+
+    console.log('\n--- Fetching my tasks only ---');
+    try {
+      const myTasks = await client.getMyTasks();
+      console.log('\nFormatted My Tasks Markdown:');
+      console.log(myTasksToMarkdown(myTasks, client));
+    } catch (e: any) {
+      console.error('Error fetching my tasks:', e.response?.data || e.message);
+    }
+
+    console.log('\n--- Fetching my bugs only ---');
+    try {
+      const myBugs = await client.getMyBugs();
+      console.log('\nFormatted My Bugs Markdown:');
+      console.log(myBugsToMarkdown(myBugs, client));
+    } catch (e: any) {
+      console.error('Error fetching my bugs:', e.response?.data || e.message);
     }
 
     console.log('\n--- Fetching task details (Task ID: 3826) ---');

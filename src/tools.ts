@@ -23,6 +23,7 @@ import { registerDetailTool }   from "./tools/detailTool.js";
 import { registerCommentTool }  from "./tools/commentTool.js";
 import { registerStatusTools }  from "./tools/statusTool.js";
 import { registerMyWorkTool }   from "./tools/myWorkTool.js";
+import { registerTaskTools }    from "./tools/taskTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -56,8 +57,16 @@ export function bugToMarkdown(
  * Available tools:
  * - `zentao_get_details`          — Fetch full details of a task or a bug by ID.
  * - `zentao_get_comments`         — Fetch history and comments timeline for task/bug.
+ * - `zentao_add_comment`          — Add a comment/remark to a task or a bug.
+ * - `zentao_edit_comment`         — Edit an existing comment by its action ID.
+ * - `zentao_delete_comment`       — Delete (soft-hide) a comment by its action ID.
  * - `zentao_update_task_status`   — Update a task's status with comments.
  * - `zentao_update_bug_status`    — Update a bug's status with comments.
+ * - `zentao_create_task`          — Create a new task under an execution.
+ * - `zentao_edit_task`            — Edit an existing task's fields.
+ * - `zentao_get_assigned_to_me`   — Get tasks and bugs assigned to the current user.
+ * - `zentao_get_my_tasks`         — Get only the tasks assigned to the current user.
+ * - `zentao_get_my_bugs`          — Get only the bugs assigned to the current user.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */
@@ -66,4 +75,5 @@ export function registerTools(server: McpServer): void {
   registerCommentTool(server, client);
   registerStatusTools(server, client);
   registerMyWorkTool(server, client);
+  registerTaskTools(server, client);
 }
