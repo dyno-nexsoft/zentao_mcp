@@ -1,7 +1,6 @@
 # Zentao MCP Server
 
-[![npm version](https://img.shields.io/npm/v/@dyno181cm.nexsoft/zentao_mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@dyno181cm.nexsoft/zentao_mcp)
-[![npm downloads](https://img.shields.io/npm/dm/@dyno181cm.nexsoft/zentao_mcp?style=flat-square&color=CB3837&logo=npm)](https://www.npmjs.com/package/@dyno181cm.nexsoft/zentao_mcp)
+[![GitHub Packages](https://img.shields.io/badge/GitHub%20Packages-%40dyno--nexsoft%2Fzentao__mcp-2ea44f?style=flat-square&logo=github)](https://github.com/dyno-nexsoft/zentao_mcp/pkgs/npm/zentao_mcp)
 [![GitHub release](https://img.shields.io/github/v/tag/dyno-nexsoft/zentao_mcp?style=flat-square&label=release&color=2ea44f&logo=github)](https://github.com/dyno-nexsoft/zentao_mcp/releases)
 [![License](https://img.shields.io/github/license/dyno-nexsoft/zentao_mcp?style=flat-square)](https://github.com/dyno-nexsoft/zentao_mcp/blob/master/LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square&logo=node.js)](https://nodejs.org)
@@ -45,20 +44,19 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 
 ## 📦 Installation
 
-### Option 1 — `npx` (recommended, no install required)
+Published on **GitHub Packages** — add this to `~/.npmrc` first (needs a GitHub token with `read:packages`):
 
-```bash
-npx @dyno181cm.nexsoft/zentao_mcp
+```ini
+@dyno-nexsoft:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
 ```
 
-### Option 2 — Global install
-
 ```bash
-npm install -g @dyno181cm.nexsoft/zentao_mcp
-zentao_mcp
+npx @dyno-nexsoft/zentao_mcp        # run directly
+npm install -g @dyno-nexsoft/zentao_mcp   # or install globally
 ```
 
-### Option 3 — Clone & build
+### Or clone & build
 
 ```bash
 git clone https://github.com/dyno-nexsoft/zentao_mcp.git
@@ -94,7 +92,7 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
   "mcpServers": {
     "zentao": {
       "command": "npx",
-      "args": ["-y", "@dyno181cm.nexsoft/zentao_mcp"],
+      "args": ["-y", "@dyno-nexsoft/zentao_mcp"],
       "env": {
         "ZENTAO_BASE_URL": "https://your-zentao-url.com/zentao/api.php/v1",
         "ZENTAO_ACCOUNT": "your_username",
@@ -104,123 +102,6 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
   }
 }
 ```
-
----
-
-## 🛠️ Available Tools
-
-### `zentao_get_details`
-Get full details of a ZenTao task or bug, including repro steps (for bugs), inline images, attachments, history, and comments.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `type` | `"task" \| "bug"` | ✅ | Type of the object |
-| `id` | `string \| number` | ✅ | Task or Bug ID |
-
-### `zentao_get_comments`
-Get only the history and comments timeline of a task or bug.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `type` | `"task" \| "bug"` | ✅ | Type of the object |
-| `id` | `string \| number` | ✅ | Task or Bug ID |
-
-### `zentao_add_comment`
-Add a comment/remark to a task or bug.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `type` | `"task" \| "bug"` | ✅ | Type of the object |
-| `id` | `string \| number` | ✅ | Task or Bug ID |
-| `comment` | `string` | ✅ | Comment content |
-
-### `zentao_edit_comment`
-Edit an existing comment. Find the comment's action ID via `zentao_get_comments` (shown as `comment id`).
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `actionId` | `string \| number` | ✅ | Action ID of the comment to edit |
-| `comment` | `string` | ✅ | New comment content |
-
-### `zentao_delete_comment`
-Delete a comment. ZenTao has no hard-delete, so this soft-hides the comment from the timeline (restorable from the ZenTao trash by an admin). Find the action ID via `zentao_get_comments`.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `actionId` | `string \| number` | ✅ | Action ID of the comment to delete |
-
-### `zentao_update_task_status`
-Update a task's status with optional comments, actual start/finish dates, and consumed hours.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `taskId` | `string \| number` | ✅ | Task ID |
-| `action` | `"start" \| "finish" \| "close" \| "pause" \| "cancel" \| "restart"` | ✅ | Status transition action |
-| `comment` | `string` | ❌ | Optional comment to attach |
-| `consumed` | `number` | ❌ | Optional hours consumed |
-| `finishedDate` | `string` | ❌ | Optional actual finish date (YYYY-MM-DD) |
-| `realStarted` | `string` | ❌ | Optional actual start date (YYYY-MM-DD) |
-| `assignedTo` | `string` | ❌ | Optional user account to assign to next |
-| `left` | `number` | ❌ | Optional left hours (for `restart`) |
-
-### `zentao_update_bug_status`
-Update a bug's status with optional comments and resolutions.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `bugId` | `string \| number` | ✅ | Bug ID |
-| `action` | `"resolve" \| "close" \| "activate"` | ✅ | Status transition action |
-| `comment` | `string` | ❌ | Optional comment to attach |
-| `resolution` | `"fixed" \| "bydesign" \| "postponed" \| "external" \| "notrepro" \| "willnotfix"` | ❌ | Optional resolution type |
-| `resolvedBuild` | `string` | ❌ | Optional build ID where bug was resolved |
-| `resolvedDate` | `string` | ❌ | Optional resolution date (YYYY-MM-DD) |
-| `assignedTo` | `string` | ❌ | Optional user account to assign to next |
-| `openedBuild` | `string` | ❌ | Optional build ID where bug was found (for `activate`) |
-
-### `zentao_create_task`
-Create a new task under an execution. Returns the created task's full details.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `executionId` | `string \| number` | ✅ | Execution ID the task belongs to |
-| `name` | `string` | ✅ | Task name |
-| `type` | `string` | ❌ | Task type (`design`, `devel`, `request`, `test`, `study`, `discuss`, `ui`, `affair`, `misc`); defaults to `devel` |
-| `assignedTo` | `string` | ❌ | User account to assign the task to |
-| `estimate` | `number` | ❌ | Estimated hours |
-| `pri` | `number` | ❌ | Priority (1=highest .. 4=lowest) |
-| `desc` | `string` | ❌ | Task description |
-| `story` | `string \| number` | ❌ | Related story ID |
-| `module` | `string \| number` | ❌ | Module ID |
-| `estStarted` | `string` | ❌ | Estimated start date (YYYY-MM-DD) |
-| `deadline` | `string` | ❌ | Deadline date (YYYY-MM-DD) |
-
-### `zentao_edit_task`
-Edit an existing task. Only the fields you provide are changed. Returns the updated task's full details.
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `taskId` | `string \| number` | ✅ | Task ID to edit |
-| `name` | `string` | ❌ | New task name |
-| `type` | `string` | ❌ | Task type |
-| `assignedTo` | `string` | ❌ | User account to reassign the task to |
-| `estimate` | `number` | ❌ | Estimated hours |
-| `consumed` | `number` | ❌ | Consumed hours |
-| `left` | `number` | ❌ | Remaining hours |
-| `pri` | `number` | ❌ | Priority (1=highest .. 4=lowest) |
-| `desc` | `string` | ❌ | Task description |
-| `story` | `string \| number` | ❌ | Related story ID |
-| `module` | `string \| number` | ❌ | Module ID |
-| `estStarted` | `string` | ❌ | Estimated start date (YYYY-MM-DD) |
-| `deadline` | `string` | ❌ | Deadline date (YYYY-MM-DD) |
-
-### `zentao_get_assigned_to_me`
-Get tasks and bugs currently assigned to the configured user account. Takes no arguments.
-
-### `zentao_get_my_tasks`
-Get only the tasks currently assigned to the configured user account. Takes no arguments.
-
-### `zentao_get_my_bugs`
-Get only the bugs currently assigned to the configured user account. Takes no arguments.
 
 ---
 
