@@ -75,6 +75,10 @@ Create a `.env` file in the project root (or pass via MCP client `env` block):
 ZENTAO_BASE_URL=https://your-zentao-url.com/zentao/api.php/v1
 ZENTAO_ACCOUNT=your_username
 ZENTAO_PASSWORD=your_password
+
+# Optional: bypass SSL certificate errors (self-signed/invalid cert).
+# Set to 'true' only if your ZenTao server has a broken/untrusted certificate.
+ZENTAO_ALLOW_INSECURE_SSL=false
 ```
 
 ---

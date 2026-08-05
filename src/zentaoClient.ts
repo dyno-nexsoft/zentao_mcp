@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
+import * as https from 'https';
 import * as stream from 'stream';
 
 dotenv.config();
@@ -118,11 +119,15 @@ export class ZentaoClient {
    * @param customClient Optional custom AxiosInstance for dependency injection/testing.
    */
   constructor(customClient?: AxiosInstance) {
+    const allowInsecure = process.env.ZENTAO_ALLOW_INSECURE_SSL === 'true';
     this.client = customClient || axios.create({
       baseURL: this.baseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
+      httpsAgent: allowInsecure
+        ? new https.Agent({ rejectUnauthorized: false })
+        : undefined,
     });
 
     // Add a request interceptor to automatically add the token and handle retries

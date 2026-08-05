@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-08-05
+
+### Added
+- **SSL bypass option**: New `ZENTAO_ALLOW_INSECURE_SSL=true` environment variable. When enabled, the Axios client skips TLS certificate verification, letting the server connect to ZenTao instances with self-signed or invalid SSL certificates. Disabled by default to keep secure verification on for normal setups.
+
+---
+
 ## [1.7.0] - 2026-07-16
 
 ### Changed
