@@ -29,6 +29,11 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | `zentao_get_assigned_to_me` | Get tasks and bugs currently assigned to you (configured via `ZENTAO_ACCOUNT`) |
 | `zentao_get_my_tasks` | Get only the tasks currently assigned to you |
 | `zentao_get_my_bugs` | Get only the bugs currently assigned to you |
+| `zentao_create_bug` | Create a new bug under a product |
+| `zentao_edit_bug` | Edit an existing bug's fields |
+| `zentao_list_tasks` | List tasks in an execution (optionally filtered by keyword) |
+| `zentao_list_bugs` | List bugs in a product (optionally filtered by keyword) |
+| `zentao_search` | Search tasks or bugs by keyword within an execution/product scope |
 
 
 **Under the hood:**
@@ -100,7 +105,8 @@ Add to your MCP client config (e.g. `claude_desktop_config.json`):
       "env": {
         "ZENTAO_BASE_URL": "https://your-zentao-url.com/zentao/api.php/v1",
         "ZENTAO_ACCOUNT": "your_username",
-        "ZENTAO_PASSWORD": "your_password"
+        "ZENTAO_PASSWORD": "your_password",
+        "ZENTAO_ALLOW_INSECURE_SSL": "false"
       }
     }
   }

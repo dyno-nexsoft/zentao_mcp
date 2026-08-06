@@ -482,6 +482,48 @@ export class ZentaoClient {
   }
 
   /**
+   * Creates a new bug under the given product.
+   *
+   * @param productId The ID of the product the bug belongs to.
+   * @param payload The bug fields (e.g. title, type, severity, pri, steps, assignedTo).
+   * @returns The created bug object returned by the API.
+   */
+  public async createBug(productId: string | number, payload: any) {
+    return this.post<any>(`/products/${productId}/bugs`, payload);
+  }
+
+  /**
+   * Lists tasks under the given execution.
+   *
+   * @param executionId The ID of the execution the tasks belong to.
+   * @returns Resolves with `{ total, tasks }` (or a raw list, normalised by caller).
+   */
+  public async listExecutionTasks(executionId: string | number): Promise<any> {
+    return this.get<any>(`/executions/${executionId}/tasks`);
+  }
+
+  /**
+   * Lists bugs under the given product.
+   *
+   * @param productId The ID of the product the bugs belong to.
+   * @returns Resolves with `{ total, bugs }` (or a raw list, normalised by caller).
+   */
+  public async listProductBugs(productId: string | number): Promise<any> {
+    return this.get<any>(`/products/${productId}/bugs`);
+  }
+
+  /**
+   * Updates (edits) an existing bug's fields.
+   *
+   * @param bugId The ID of the bug to edit.
+   * @param payload The bug fields to change (only provided fields are sent).
+   * @returns The updated bug object returned by the API.
+   */
+  public async updateBug(bugId: string | number, payload: any) {
+    return this.put<any>(`/bugs/${bugId}`, payload);
+  }
+
+  /**
    * Updates task status by calling the action endpoint.
    * 
    * @param taskId The ID of the task.

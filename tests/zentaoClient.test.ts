@@ -331,6 +331,49 @@ describe('ZentaoClient', () => {
       expect(res).toEqual(updated);
       expect(mockAxiosInstance.put).toHaveBeenCalledWith('/tasks/100', { name: 'Renamed Task' });
     });
+
+    it('should list tasks under an execution', async () => {
+      const data = { total: 2, tasks: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data });
+
+      const res = await client.listExecutionTasks(7);
+
+      expect(res).toEqual(data);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/executions/7/tasks');
+    });
+  });
+
+  describe('Bugs', () => {
+    it('should create a bug under a product', async () => {
+      const created = { id: 200, title: 'New Bug' };
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: created });
+
+      const payload = { title: 'New Bug', severity: 2 };
+      const res = await client.createBug(3, payload);
+
+      expect(res).toEqual(created);
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/products/3/bugs', payload);
+    });
+
+    it('should update a bug via PUT', async () => {
+      const updated = { id: 200, title: 'Renamed Bug' };
+      mockAxiosInstance.put.mockResolvedValueOnce({ data: updated });
+
+      const res = await client.updateBug(200, { title: 'Renamed Bug' });
+
+      expect(res).toEqual(updated);
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/bugs/200', { title: 'Renamed Bug' });
+    });
+
+    it('should list bugs under a product', async () => {
+      const data = { total: 1, bugs: [{ id: 9, title: 'Bug 9' }] };
+      mockAxiosInstance.get.mockResolvedValueOnce({ data });
+
+      const res = await client.listProductBugs(4);
+
+      expect(res).toEqual(data);
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/products/4/bugs');
+    });
   });
 
   describe('Comments', () => {

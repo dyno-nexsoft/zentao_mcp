@@ -24,6 +24,9 @@ import { registerCommentTool }  from "./tools/commentTool.js";
 import { registerStatusTools }  from "./tools/statusTool.js";
 import { registerMyWorkTool }   from "./tools/myWorkTool.js";
 import { registerTaskTools }    from "./tools/taskTool.js";
+import { registerBugTools }     from "./tools/bugTool.js";
+import { registerListTools }    from "./tools/listTool.js";
+import { registerSearchTool }   from "./tools/searchTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -67,6 +70,11 @@ export function bugToMarkdown(
  * - `zentao_get_assigned_to_me`   — Get tasks and bugs assigned to the current user.
  * - `zentao_get_my_tasks`         — Get only the tasks assigned to the current user.
  * - `zentao_get_my_bugs`          — Get only the bugs assigned to the current user.
+ * - `zentao_create_bug`           — Create a new bug under a product.
+ * - `zentao_edit_bug`             — Edit an existing bug's fields.
+ * - `zentao_list_tasks`           — List tasks in an execution (optionally filtered).
+ * - `zentao_list_bugs`            — List bugs in a product (optionally filtered).
+ * - `zentao_search`               — Search tasks or bugs by keyword within a scope.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */
@@ -76,4 +84,7 @@ export function registerTools(server: McpServer): void {
   registerStatusTools(server, client);
   registerMyWorkTool(server, client);
   registerTaskTools(server, client);
+  registerBugTools(server, client);
+  registerListTools(server, client);
+  registerSearchTool(server, client);
 }

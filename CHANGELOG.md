@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-08-06
+
+### Added
+- **Bug management**: New `zentao_create_bug` and `zentao_edit_bug` tools to create a bug under a product and edit an existing bug's fields.
+- **List tools**: New `zentao_list_tasks` (by execution) and `zentao_list_bugs` (by product) tools with optional keyword filtering.
+- **Search tool**: New `zentao_search` tool to search tasks or bugs by keyword within an execution/product scope (client-side filter).
+- **Line endings**: Added `.gitattributes` to normalize line endings across the repo.
+
+---
+
 ## [1.1.0] - 2026-08-05
 
 ### Added
