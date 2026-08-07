@@ -74,7 +74,7 @@ export function bugToMarkdown(
  * - `zentao_edit_bug`             — Edit an existing bug's fields.
  * - `zentao_list_tasks`           — List tasks in an execution (optionally filtered).
  * - `zentao_list_bugs`            — List bugs in a product (optionally filtered).
- * - `zentao_search`               — Search tasks or bugs by keyword within a scope.
+ * - `zentao_search`               — Search tasks or bugs by keyword/status/priority/severity/assignee/opened-date within a scope.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */

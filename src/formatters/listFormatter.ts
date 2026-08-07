@@ -66,19 +66,69 @@ export function bugsToMarkdown(bugs: any[], client: ZentaoClient): string {
   ].join("\n");
 }
 
+/** Every filter is optional; an item must satisfy all of the provided ones (AND). */
+export interface SearchFilters {
+  /** Case-insensitive substring match against task `name` / bug `title`. */
+  keyword?: string;
+  /** Exact match (case-insensitive) against the item's `status`. */
+  status?: string;
+  /** Exact match against `pri` (1=highest .. 4=lowest). */
+  pri?: number;
+  /** Exact match against `severity` (bugs only, 1=highest .. 4=lowest). */
+  severity?: number;
+  /** Exact match (case-insensitive) against the assignee's account. */
+  assignedTo?: string;
+  /** Only items whose `openedDate` is on/after this date (bugs only, `YYYY-MM-DD`). */
+  openedAfter?: string;
+  /** Only items whose `openedDate` is on/before this date (bugs only, `YYYY-MM-DD`). */
+  openedBefore?: string;
+}
+
 /**
- * Case-insensitive keyword filter for task/bug lists.
- * Matches against task `name` / bug `title` (and, as a fallback, any
- * stringified field) so searches are forgiving.
+ * Filters a task/bug list by any combination of [SearchFilters].
+ *
+ * ZenTao's REST API has no server-side filtering for most of these (see the
+ * module doc in `searchTool.ts`), so every filter here runs client-side over
+ * an already-fetched list.
  *
  * @param items Raw task or bug objects.
- * @param keyword The keyword to match.
+ * @param filters Filters to apply; an item must match all of the ones set.
  */
-export function filterByKeyword(items: any[], keyword: string): any[] {
-  const k = (keyword || "").toLowerCase().trim();
-  if (!k) return items;
+export function filterItems(items: any[], filters: SearchFilters): any[] {
+  const keyword = (filters.keyword ?? "").toLowerCase().trim();
+  const status = filters.status?.toLowerCase().trim();
+  const assignedTo = filters.assignedTo?.toLowerCase().trim();
+
   return items.filter((item) => {
-    const name = String(item.name ?? item.title ?? "").toLowerCase();
-    return name.includes(k);
+    if (keyword) {
+      const name = String(item.name ?? item.title ?? "").toLowerCase();
+      if (!name.includes(keyword)) return false;
+    }
+
+    if (status && String(item.status ?? "").toLowerCase() !== status) {
+      return false;
+    }
+
+    if (filters.pri !== undefined && Number(item.pri) !== filters.pri) {
+      return false;
+    }
+
+    if (filters.severity !== undefined && Number(item.severity) !== filters.severity) {
+      return false;
+    }
+
+    if (assignedTo) {
+      const account = String(item.assignedTo?.account ?? item.assignedTo ?? "").toLowerCase();
+      if (account !== assignedTo) return false;
+    }
+
+    if (filters.openedAfter || filters.openedBefore) {
+      const opened = String(item.openedDate ?? "").slice(0, 10);
+      if (!opened) return false;
+      if (filters.openedAfter && opened < filters.openedAfter) return false;
+      if (filters.openedBefore && opened > filters.openedBefore) return false;
+    }
+
+    return true;
   });
 }

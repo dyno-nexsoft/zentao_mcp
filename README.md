@@ -33,7 +33,7 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | `zentao_edit_bug` | Edit an existing bug's fields |
 | `zentao_list_tasks` | List tasks in an execution (optionally filtered by keyword) |
 | `zentao_list_bugs` | List bugs in a product (optionally filtered by keyword) |
-| `zentao_search` | Search tasks or bugs by keyword within an execution/product scope |
+| `zentao_search` | Search tasks or bugs within an execution/product scope, filtering by keyword, status, priority, severity, assignee, and/or opened-date range |
 
 
 **Under the hood:**
