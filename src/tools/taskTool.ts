@@ -59,11 +59,12 @@ export function registerTaskTools(server: McpServer, client: ZentaoClient): void
         desc: z.string().optional().describe("Task description (plain text or HTML)"),
         story: z.union([z.string(), z.number()]).optional().describe("Related story ID"),
         module: z.union([z.string(), z.number()]).optional().describe("Module ID"),
+        parent: z.union([z.string(), z.number()]).optional().describe("Parent task ID (makes this a subtask; must be in the same execution)"),
         estStarted: z.string().optional().describe("Estimated start date (YYYY-MM-DD)"),
         deadline: z.string().optional().describe("Deadline date (YYYY-MM-DD)"),
       },
     },
-    async ({ executionId, name, type, assignedTo, estimate, pri, desc, story, module, estStarted, deadline }) => {
+    async ({ executionId, name, type, assignedTo, estimate, pri, desc, story, module, parent, estStarted, deadline }) => {
       const payload: any = {
         name,
         type: type || "devel",
@@ -74,10 +75,18 @@ export function registerTaskTools(server: McpServer, client: ZentaoClient): void
       if (desc !== undefined) payload.desc = desc;
       if (story !== undefined) payload.story = story;
       if (module !== undefined) payload.module = module;
+      if (parent !== undefined) payload.parent = parent;
       if (estStarted !== undefined) payload.estStarted = estStarted;
       if (deadline !== undefined) payload.deadline = deadline;
 
       const created = await client.createTask(executionId, payload);
+      // The REST create endpoint ignores `parent` on some ZenTao versions, but
+      // the edit endpoint honours it — link the new task to its parent there.
+      const createdId = created?.id ?? created?.task?.id;
+      const createdParent = created?.parent ?? created?.task?.parent;
+      if (parent !== undefined && createdId && String(createdParent) !== String(parent)) {
+        await client.updateTask(createdId, { parent });
+      }
       return await formatWrittenTask(client, created, "Successfully created task!");
     }
   );
@@ -99,11 +108,12 @@ export function registerTaskTools(server: McpServer, client: ZentaoClient): void
         desc: z.string().optional().describe("Task description (plain text or HTML)"),
         story: z.union([z.string(), z.number()]).optional().describe("Related story ID"),
         module: z.union([z.string(), z.number()]).optional().describe("Module ID"),
+        parent: z.union([z.string(), z.number()]).optional().describe("Parent task ID (makes this a subtask; must be in the same execution)"),
         estStarted: z.string().optional().describe("Estimated start date (YYYY-MM-DD)"),
         deadline: z.string().optional().describe("Deadline date (YYYY-MM-DD)"),
       },
     },
-    async ({ taskId, name, type, assignedTo, estimate, consumed, left, pri, desc, story, module, estStarted, deadline }) => {
+    async ({ taskId, name, type, assignedTo, estimate, consumed, left, pri, desc, story, module, parent, estStarted, deadline }) => {
       const payload: any = {};
       if (name !== undefined) payload.name = name;
       if (type !== undefined) payload.type = type;
@@ -115,6 +125,7 @@ export function registerTaskTools(server: McpServer, client: ZentaoClient): void
       if (desc !== undefined) payload.desc = desc;
       if (story !== undefined) payload.story = story;
       if (module !== undefined) payload.module = module;
+      if (parent !== undefined) payload.parent = parent;
       if (estStarted !== undefined) payload.estStarted = estStarted;
       if (deadline !== undefined) payload.deadline = deadline;
 
