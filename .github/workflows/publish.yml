@@ -1,12 +1,15 @@
 name: Publish to GitHub Packages
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (for example, 1.9.1)'
+        required: true
+        type: string
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -14,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -22,6 +27,75 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Prepare release version
+        id: release
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
+            echo "Manual releases must run from a branch." >&2
+            exit 1
+          fi
+
+          version="${RELEASE_VERSION#v}"
+          tag="v$version"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists." >&2
+            exit 1
+          fi
+
+          npm version "$version" --no-git-tag-version
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Update changelog from commits
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          let previousTag = '';
+          try {
+            previousTag = execFileSync('git', ['describe', '--tags', '--abbrev=0'], { encoding: 'utf8' }).trim();
+          } catch {
+            // There may not be a release tag yet.
+          }
+
+          const range = previousTag ? `${previousTag}..HEAD` : 'HEAD';
+          const subjects = execFileSync('git', ['log', '--no-merges', '--format=%s', range], { encoding: 'utf8' })
+            .trim()
+            .split('\n')
+            .filter(Boolean);
+          const changes = subjects.length ? subjects.map((subject) => `- ${subject}`).join('\n') : '- No commits since the previous release.';
+          const version = process.env.RELEASE_VERSION.replace(/^v/, '');
+          const date = new Date().toISOString().slice(0, 10);
+          const changelog = readFileSync('CHANGELOG.md', 'utf8');
+          const firstEntry = changelog.indexOf('\n## [');
+
+          if (firstEntry === -1) {
+            throw new Error('Could not find a release entry in CHANGELOG.md');
+          }
+
+          const header = changelog.slice(0, firstEntry).trimEnd();
+          const previousEntries = changelog.slice(firstEntry + 1).trimStart();
+          const releaseEntry = `## [${version}] - ${date}\n\n### Changes\n${changes}`;
+          writeFileSync('CHANGELOG.md', `${header}\n\n${releaseEntry}\n\n---\n\n${previousEntries}`);
+          NODE
+      - name: Commit version and push tag
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore: release ${{ steps.release.outputs.tag }}"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+          git tag "${{ steps.release.outputs.tag }}"
+          git push origin "${{ steps.release.outputs.tag }}"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ steps.release.outputs.tag }}" >/dev/null 2>&1 || \
+            gh release create "${{ steps.release.outputs.tag }}" --verify-tag --generate-notes
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
