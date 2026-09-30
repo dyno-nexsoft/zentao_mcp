@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 2026-09-30
+
+### Changes
+- ci: generate changelog during release
+
+---
+
 ## [1.9.0] - 2026-09-30
 
 ### Added
