@@ -2,10 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.9.0] - 2026-09-30
 
 ### Added
-- **Subtasks**: `zentao_create_task` and `zentao_edit_task` accept an optional `parent` task ID. Because the REST create endpoint ignores `parent` on some ZenTao versions, `zentao_create_task` links the new task to its parent with a follow-up edit when needed. Task details now show the parent task.
+- **Subtasks**: `zentao_create_task` and `zentao_edit_task` accept an optional `parent` task ID to create or convert tasks into subtasks.
+- When creating tasks with a parent, if the REST create endpoint returns `parent: 0`, a follow-up edit request automatically sets the correct parent and hierarchy path.
+- Task details now display `**Parent task:** #<id>` when a task has a parent.
+
+### Changed
+- Improved task creation workflow to handle ZenTao REST API quirks where the create endpoint silently ignores `parent` on some versions.
+
+### Tests
+- New `tests/taskTool.test.ts` with 5 tests covering parent task functionality (creation, editing, follow-up edit logic, omission behavior, and output formatting).
 
 ---
 
@@ -22,7 +30,7 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] - 2026-08-05
 
 ### Added
-- **SSL bypass option**: New `ZENTAO_ALLOW_INSECURE_SSL=true` environment variable. When enabled, the Axios client skips TLS certificate verification, letting the server connect to ZenTao instances with self-signed or invalid SSL certificates. Disabled by default to keep secure verification on for normal setups.
+- **SSL bypass option**: New `ZENTAO_ALLOW_INSECURE_SSL=true` environment variable. When enabled, the Axios client skips TLS certificate verification, letting the server connect to ZenTao instances with self-signed certificates.
 
 ---
 
