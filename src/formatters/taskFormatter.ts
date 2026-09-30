@@ -31,6 +31,7 @@ export async function taskToMarkdown(
     `**Estimate/Consumed/Left:** ${est}h / ${cons}h / ${left}h (${prog}%)`,
   ];
 
+  if (Number(rawTask.parent) > 0) meta.push(`**Parent task:** #${rawTask.parent}`);
   if (rawTask.openedBy)   meta.push(`**Opened by:** ${formatUser(rawTask.openedBy)}`);
   if (rawTask.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawTask.assignedTo)}`);
   if (rawTask.finishedBy) meta.push(`**Finished by:** ${formatUser(rawTask.finishedBy)}`);

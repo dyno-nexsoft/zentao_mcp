@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- **Subtasks**: `zentao_create_task` and `zentao_edit_task` accept an optional `parent` task ID. Because the REST create endpoint ignores `parent` on some ZenTao versions, `zentao_create_task` links the new task to its parent with a follow-up edit when needed. Task details now show the parent task.
+
+---
+
 ## [1.2.0] - 2026-08-06
 
 ### Added
