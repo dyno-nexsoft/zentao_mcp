@@ -4,9 +4,19 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (for example, 1.9.1)'
-        required: true
+        description: 'Exact version to release (for example, 1.9.1). Leave empty to bump the last number automatically.'
+        required: false
+        default: ''
         type: string
+      bump:
+        description: 'Which part to bump when no version is given'
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -31,24 +41,34 @@ jobs:
         id: release
         env:
           RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_BUMP: ${{ inputs.bump }}
         run: |
           if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
             echo "Manual releases must run from a branch." >&2
             exit 1
           fi
 
-          version="${RELEASE_VERSION#v}"
+          requested="${RELEASE_VERSION//[[:space:]]/}"
+          if [[ -n "$requested" ]]; then
+            target="${requested#v}"
+          else
+            target="${RELEASE_BUMP:-patch}"
+          fi
+
+          npm version "$target" --no-git-tag-version
+          version="$(node -p "require('./package.json').version")"
           tag="v$version"
           if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
             echo "Tag $tag already exists." >&2
             exit 1
           fi
 
-          npm version "$version" --no-git-tag-version
+          echo "Releasing $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Update changelog from commits
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process';
