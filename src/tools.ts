@@ -27,6 +27,8 @@ import { registerTaskTools }    from "./tools/taskTool.js";
 import { registerBugTools }     from "./tools/bugTool.js";
 import { registerListTools }    from "./tools/listTool.js";
 import { registerSearchTool }   from "./tools/searchTool.js";
+import { registerLookupTools }  from "./tools/lookupTool.js";
+import { registerManageTools }  from "./tools/manageTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -75,6 +77,14 @@ export function bugToMarkdown(
  * - `zentao_list_tasks`           — List tasks in an execution (optionally filtered).
  * - `zentao_list_bugs`            — List bugs in a product (optionally filtered).
  * - `zentao_search`               — Search tasks or bugs by keyword/status/priority/severity/assignee/opened-date within a scope.
+ * - `zentao_list_products`          — List the products.
+ * - `zentao_list_projects`          — List the projects.
+ * - `zentao_list_executions`        — List the executions, optionally of one project.
+ * - `zentao_list_users`             — List the users (find an account to assign to).
+ * - `zentao_delete_task`            — Permanently delete a task.
+ * - `zentao_delete_bug`             — Permanently delete a bug.
+ * - `zentao_record_effort`          — Log hours spent and hours left on a task.
+ * - `zentao_download_attachment`    — Download an attachment by file ID.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */
@@ -87,4 +97,6 @@ export function registerTools(server: McpServer): void {
   registerBugTools(server, client);
   registerListTools(server, client);
   registerSearchTool(server, client);
+  registerLookupTools(server, client);
+  registerManageTools(server, client);
 }
