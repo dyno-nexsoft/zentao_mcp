@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.2] - 2026-10-14
+
+### Added
+- add lookup, delete, effort and attachment tools
+- add confirm action to zentao_update_bug_status
+
+### Maintenance
+- group release notes by commit type and publish them as the release body
+- bump the release version automatically when none is given
+
+---
+
 ## [1.9.1] - 2026-09-30
 
 ### Changes
