@@ -546,6 +546,63 @@ export class ZentaoClient {
   }
 
   /**
+   * Helper method to perform DELETE requests.
+   * Clears the cache to ensure subsequent GET requests fetch the updated state.
+   *
+   * @param url The API endpoint path.
+   * @returns The response data.
+   */
+  public async delete<T>(url: string): Promise<T> {
+    this.clearCache();
+    const res = await this.client.delete<T>(url);
+    return res.data;
+  }
+
+  /** Permanently deletes a task. */
+  public async deleteTask(taskId: string | number) {
+    return this.delete<any>(`/tasks/${taskId}`);
+  }
+
+  /** Permanently deletes a bug. */
+  public async deleteBug(bugId: string | number) {
+    return this.delete<any>(`/bugs/${bugId}`);
+  }
+
+  /**
+   * Logs effort against a task (hours spent and hours left).
+   *
+   * @param taskId The ID of the task.
+   * @param payload `{ consumed, left, date?, work? }`.
+   */
+  public async recordTaskEffort(taskId: string | number, payload: any) {
+    return this.post<any>(`/tasks/${taskId}/estimate`, payload);
+  }
+
+  /** Lists the products the account can see. */
+  public async listProducts(): Promise<any> {
+    return this.get<any>('/products');
+  }
+
+  /** Lists the projects the account can see. */
+  public async listProjects(): Promise<any> {
+    return this.get<any>('/projects');
+  }
+
+  /**
+   * Lists executions, optionally only those of one project.
+   *
+   * @param projectId Optional project ID to narrow the list.
+   */
+  public async listExecutions(projectId?: string | number): Promise<any> {
+    return this.get<any>(projectId === undefined ? '/executions' : `/projects/${projectId}/executions`);
+  }
+
+  /** Lists the users, so an account name can be found for assignment. */
+  public async listUsers(): Promise<any> {
+    return this.get<any>('/users');
+  }
+
+  /**
    * Posts to a classic (non-REST) ZenTao action endpoint and normalizes the
    * result. Shared by `addComment`, `editComment`, and `deleteComment`, which
    * all rely on the legacy web action module rather than the REST API.

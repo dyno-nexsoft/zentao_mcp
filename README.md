@@ -33,6 +33,14 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | `zentao_edit_bug` | Edit an existing bug's fields |
 | `zentao_list_tasks` | List tasks in an execution (optionally filtered by keyword) |
 | `zentao_list_bugs` | List bugs in a product (optionally filtered by keyword) |
+| `zentao_list_products` | List the products (IDs are needed to create or list bugs) |
+| `zentao_list_projects` | List the projects |
+| `zentao_list_executions` | List the executions (IDs are needed to create or list tasks), optionally of one project |
+| `zentao_list_users` | List the users to find the account to assign to, with an optional keyword |
+| `zentao_delete_task` | Permanently delete a task |
+| `zentao_delete_bug` | Permanently delete a bug |
+| `zentao_record_effort` | Log hours spent and hours left on a task |
+| `zentao_download_attachment` | Download an attachment by file ID and return the local path |
 | `zentao_search` | Search tasks or bugs within an execution/product scope, filtering by keyword, status, priority, severity, assignee, and/or opened-date range |
 
 
