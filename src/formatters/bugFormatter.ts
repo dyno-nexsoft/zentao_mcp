@@ -27,6 +27,9 @@ export async function bugToMarkdown(
     `**Type:** ${rawBug.type || 'N/A'}`,
   ];
 
+  if (rawBug.confirmed !== undefined && rawBug.confirmed !== null) {
+    meta.push(`**Confirmed:** ${Number(rawBug.confirmed) === 1 ? 'yes' : 'no'}`);
+  }
   if (rawBug.openedBy)   meta.push(`**Opened by:** ${formatUser(rawBug.openedBy)}`);
   if (rawBug.assignedTo) meta.push(`**Assigned to:** ${formatUser(rawBug.assignedTo)}`);
   if (rawBug.resolvedBy) {

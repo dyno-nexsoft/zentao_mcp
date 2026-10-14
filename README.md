@@ -23,7 +23,7 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | `zentao_edit_comment` | Edit an existing comment by its action ID |
 | `zentao_delete_comment` | Delete (soft-hide) a comment by its action ID |
 | `zentao_update_task_status` | Update task status (start, finish, close, pause, cancel, restart) and add optional comments/hours |
-| `zentao_update_bug_status` | Update bug status (resolve, close, activate) and add optional comments/resolutions |
+| `zentao_update_bug_status` | Confirm a bug, or update its status (resolve, close, activate), with optional comments/resolutions |
 | `zentao_create_task` | Create a new task under an execution |
 | `zentao_edit_task` | Edit an existing task's fields |
 | `zentao_get_assigned_to_me` | Get tasks and bugs currently assigned to you (configured via `ZENTAO_ACCOUNT`) |

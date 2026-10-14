@@ -65,15 +65,15 @@ export function registerStatusTools(server: McpServer, client: ZentaoClient): vo
   server.registerTool(
     "zentao_update_bug_status",
     {
-      description: "Update the status of a bug and optionally add a comment/remark",
+      description: "Update the status of a bug and optionally add a comment/remark. 'confirm' acknowledges the bug (it stays active); 'resolve', 'close' and 'activate' change its status.",
       inputSchema: {
         bugId: z.union([z.string(), z.number()]).describe("Bug ID"),
-        action: z.enum(["resolve", "close", "activate"]).describe("Status transition action"),
+        action: z.enum(["confirm", "resolve", "close", "activate"]).describe("Status transition action"),
         comment: z.string().optional().describe("Optional comment/remark to attach to this action"),
         resolution: z.enum(["fixed", "bydesign", "postponed", "external", "notrepro", "willnotfix"]).optional().describe("Resolution type (required for 'resolve', defaults to 'fixed')"),
         resolvedBuild: z.string().optional().describe("Build ID/name in which the bug was resolved (used for 'resolve', defaults to 'trunk')"),
         resolvedDate: z.string().optional().describe("Optional date of resolution YYYY-MM-DD (used for 'resolve', defaults to today)"),
-        assignedTo: z.string().optional().describe("Optional user account to assign to next (used for 'resolve' or 'activate')"),
+        assignedTo: z.string().optional().describe("Optional user account to assign to next (used for 'confirm', 'resolve' or 'activate')"),
         openedBuild: z.string().optional().describe("Optional build ID/name where bug was found (used for 'activate')"),
       },
     },
@@ -89,13 +89,18 @@ export function registerStatusTools(server: McpServer, client: ZentaoClient): vo
       } else if (action === "activate") {
         if (assignedTo) payload.assignedTo = assignedTo;
         if (openedBuild) payload.openedBuild = openedBuild;
+      } else if (action === "confirm") {
+        if (assignedTo) payload.assignedTo = assignedTo;
       }
 
       const updatedBug = await client.updateBugStatus(bugId, action, payload);
-      
+
       const downloadedImages: string[] = [];
       const markdown = await bugToMarkdown(updatedBug, client, downloadedImages);
-      const output = `### Successfully updated bug status to '${updatedBug.status || "updated"}'!\n\n${markdown}`;
+      const headline = action === "confirm"
+        ? "### Successfully confirmed the bug!"
+        : `### Successfully updated bug status to '${updatedBug.status || "updated"}'!`;
+      const output = `${headline}\n\n${markdown}`;
       
       return await buildMcpResponse(output, downloadedImages);
     }

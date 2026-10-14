@@ -538,7 +538,7 @@ export class ZentaoClient {
    * Updates bug status by calling the action endpoint.
    * 
    * @param bugId The ID of the bug.
-   * @param action The status transition action (e.g. 'resolve', 'close', 'activate').
+   * @param action The status transition action (e.g. 'confirm', 'resolve', 'close', 'activate').
    * @param payload The request body payload.
    */
   public async updateBugStatus(bugId: string | number, action: string, payload: any) {
