@@ -18,6 +18,7 @@ Fetch task details, bug reports, and attachments — all directly inside your AI
 | Tool | Description |
 |---|---|
 | `zentao_get_details` | Fetch full details of a task or bug by ID |
+| `zentao_get_doc` | Read a doc library document (by ID or `doc-view-<id>.html` link) as Markdown, with attachments |
 | `zentao_get_comments` | Fetch only the history and comments timeline of a task or bug (with comment IDs) |
 | `zentao_add_comment` | Add a comment/remark to a task or bug |
 | `zentao_edit_comment` | Edit an existing comment by its action ID |
