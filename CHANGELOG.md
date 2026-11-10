@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.3] - 2026-11-10
+
+### Added
+- add zentao_get_doc to read doc library documents
+
+---
+
 ## [1.9.2] - 2026-10-14
 
 ### Added
