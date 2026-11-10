@@ -29,6 +29,7 @@ import { registerListTools }    from "./tools/listTool.js";
 import { registerSearchTool }   from "./tools/searchTool.js";
 import { registerLookupTools }  from "./tools/lookupTool.js";
 import { registerManageTools }  from "./tools/manageTool.js";
+import { registerDocTool }      from "./tools/docTool.js";
 
 // ─── Shared singleton ────────────────────────────────────────────────────────
 
@@ -85,6 +86,7 @@ export function bugToMarkdown(
  * - `zentao_delete_bug`             — Permanently delete a bug.
  * - `zentao_record_effort`          — Log hours spent and hours left on a task.
  * - `zentao_download_attachment`    — Download an attachment by file ID.
+ * - `zentao_get_doc`                — Read a doc library document by ID or link.
  *
  * @param server The MCP Server instance where the tools will be registered.
  */
@@ -99,4 +101,5 @@ export function registerTools(server: McpServer): void {
   registerSearchTool(server, client);
   registerLookupTools(server, client);
   registerManageTools(server, client);
+  registerDocTool(server, client);
 }

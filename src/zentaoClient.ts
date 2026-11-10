@@ -602,6 +602,11 @@ export class ZentaoClient {
     return this.get<any>('/users');
   }
 
+  /** Retrieves a document from the doc library, with its content and attachments. */
+  public async getDocDetails(docId: string | number): Promise<any> {
+    return this.get<any>(`/docs/${docId}`);
+  }
+
   /**
    * Posts to a classic (non-REST) ZenTao action endpoint and normalizes the
    * result. Shared by `addComment`, `editComment`, and `deleteComment`, which
